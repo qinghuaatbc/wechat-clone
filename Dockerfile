@@ -6,7 +6,7 @@ RUN npm ci
 COPY web-react/ .
 RUN npm run build
 
-FROM golang:1.24-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 ENV GOTOOLCHAIN=auto
 
