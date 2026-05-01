@@ -1,0 +1,22 @@
+# Binaries
+wechat-clone
+*.exe
+
+# Env
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Logs
+*.log
+server.log
+
+# Dependencies
+vendor/
+node_modules/
+web-react/dist/

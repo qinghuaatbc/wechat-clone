@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+html.dark {
+  background-color: #111111;
+  color: #D9D9D9;
+}
+
+html.dark body {
+  background-color: #111111;
+}
+
+/* Dark mode overrides for common classes */
+html.dark .bg-wechat-bg { background-color: #111111; }
+html.dark .bg-wechat-bar { background-color: #1A1A1A; border-color: #333333; }
+html.dark .bg-white { background-color: #1A1A1A; color: #D9D9D9; }
+html.dark .text-wechat-dark { color: #D9D9D9; }
+html.dark .text-wechat-text { color: #CCCCCC; }
+html.dark .divide-wechat-border > * + * { border-color: #333333; }
+html.dark .border-wechat-border { border-color: #333333; }
+
+::-webkit-scrollbar {
+  display: none;
+}
+
+@layer components {
+  .wechat-bubble-sent {
+    @apply bg-wechat-green text-white rounded-2xl rounded-tr-sm shadow-sm;
+  }
+  .wechat-bubble-recv {
+    @apply bg-white text-wechat-dark rounded-2xl rounded-tl-sm shadow-sm;
+  }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+  .animate-slide-up {
+    animation: slideUp 0.4s ease-out;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
