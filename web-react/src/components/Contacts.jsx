@@ -15,6 +15,7 @@ export default function Contacts() {
     if (!keyword.trim()) return
     const results = await searchUser(keyword)
     const user = useStore.getState().user
+    console.log('Search results:', results, 'Current user:', user?.id)
     setSearchResults(results.filter(u => u.id !== user?.id))
   }
 
@@ -64,7 +65,7 @@ export default function Contacts() {
             <div key={u.id} className="flex items-center p-4 justify-between">
               <div>
                 <p className="font-medium">{u.nickname}</p>
-                <p className="text-sm text-wechat-gray">{u.wxid}</p>
+                <p className="text-sm text-wechat-gray">微信号: {u.wxid}</p>
               </div>
               <button
                 onClick={() => handleAdd(u.wxid)}
@@ -74,6 +75,13 @@ export default function Contacts() {
               </button>
             </div>
           ))}
+        </div>
+      )}
+
+      {keyword && searchResults.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-12 text-wechat-gray">
+          <p className="text-lg">未找到用户</p>
+          <p className="text-sm">请检查微信号或昵称是否正确</p>
         </div>
       )}
 

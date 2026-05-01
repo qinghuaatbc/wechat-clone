@@ -94,6 +94,13 @@ type SearchUserReq struct {
 	Keyword string `json:"keyword" binding:"required"`
 }
 
+type SearchUserInfo struct {
+	ID       uuid.UUID `json:"id"`
+	Wxid     string    `json:"wxid"`
+	Nickname string    `json:"nickname"`
+	Avatar   string    `json:"avatar"`
+}
+
 func (h *FriendHandler) SearchUser(c *gin.Context) {
 	var req SearchUserReq
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -102,11 +109,20 @@ func (h *FriendHandler) SearchUser(c *gin.Context) {
 	}
 
 	var users []models.User
-	h.DB.Where("wxid LIKE ? OR nickname LIKE ?", "%"+req.Keyword+"%", "%"+req.Keyword+"%").
-		Select("id, wxid, nickname, avatar, signature").
+	h.DB.Where("wxid LIKE ? OR nickname LIKE ? OR phone LIKE ?", "%"+req.Keyword+"%", "%"+req.Keyword+"%", "%"+req.Keyword+"%").
 		Find(&users)
 
-	c.JSON(http.StatusOK, gin.H{"users": users})
+	var results []SearchUserInfo
+	for _, u := range users {
+		results = append(results, SearchUserInfo{
+			ID:       u.ID,
+			Wxid:     u.Wxid,
+			Nickname: u.Nickname,
+			Avatar:   u.Avatar,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"users": results})
 }
 
 type DeleteFriendReq struct {
