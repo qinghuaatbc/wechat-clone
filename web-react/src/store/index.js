@@ -77,28 +77,28 @@ export const useStore = create((set, get) => ({
 
   fetchFriends: async () => {
     try {
-      const res = await api.get('/friends', { headers: { Authorization: `Bearer ${get().token}` } })
+      const res = await api.get('/friends')
       set({ friends: res.data.friends || [] })
     } catch (e) { set({ friends: [] }) }
   },
 
   fetchGroups: async () => {
     try {
-      const res = await api.get('/groups', { headers: { Authorization: `Bearer ${get().token}` } })
+      const res = await api.get('/groups')
       set({ groups: res.data.groups || [] })
     } catch (e) { set({ groups: [] }) }
   },
 
   fetchMoments: async () => {
     try {
-      const res = await api.get('/moments', { headers: { Authorization: `Bearer ${get().token}` } })
+      const res = await api.get('/moments')
       set({ moments: res.data.moments || [] })
     } catch (e) { set({ moments: [] }) }
   },
 
   fetchComments: async (momentId) => {
     try {
-      const res = await api.get(`/moments/${momentId}/comments`, { headers: { Authorization: `Bearer ${get().token}` } })
+      const res = await api.get(`/moments/${momentId}/comments`)
       set(state => ({ comments: { ...state.comments, [momentId]: res.data.comments || [] } }))
     } catch (e) {}
   },
@@ -106,7 +106,7 @@ export const useStore = create((set, get) => ({
   postMoment: async (content, images = '') => {
     set({ loading: true })
     try {
-      await api.post('/moments', { content, images }, { headers: { Authorization: `Bearer ${get().token}` } })
+      await api.post('/moments', { content, images })
       get().fetchMoments()
       toast.success('发布成功')
     } finally { set({ loading: false }) }
@@ -115,7 +115,7 @@ export const useStore = create((set, get) => ({
   addFriend: async (wxid) => {
     set({ loading: true })
     try {
-      await api.post('/friends/add', { wxid }, { headers: { Authorization: `Bearer ${get().token}` } })
+      await api.post('/friends/add', { wxid })
       get().fetchFriends()
       toast.success('好友已添加')
     } finally { set({ loading: false }) }
@@ -123,7 +123,7 @@ export const useStore = create((set, get) => ({
 
   searchUser: async (keyword) => {
     try {
-      const res = await api.post('/users/search', { keyword }, { headers: { Authorization: `Bearer ${get().token}` } })
+      const res = await api.post('/users/search', { keyword })
       return res.data.users || []
     } catch (e) { return [] }
   },
@@ -132,7 +132,7 @@ export const useStore = create((set, get) => ({
     if (get().messages[conversationId]) return
     set({ loading: true })
     try {
-      const res = await api.get(`/messages?target_id=${conversationId}`, { headers: { Authorization: `Bearer ${get().token}` } })
+      const res = await api.get(`/messages?target_id=${conversationId}`)
       set(state => ({ 
         messages: { ...state.messages, [conversationId]: res.data.messages || [] }, 
         unread: { ...state.unread, [conversationId]: 0 } 

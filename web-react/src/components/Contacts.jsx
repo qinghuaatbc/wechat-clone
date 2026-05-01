@@ -14,7 +14,8 @@ export default function Contacts() {
   const handleSearch = async () => {
     if (!keyword.trim()) return
     const results = await searchUser(keyword)
-    setSearchResults(results)
+    const user = useStore.getState().user
+    setSearchResults(results.filter(u => u.id !== user?.id))
   }
 
   const handleAdd = async (wxid) => {
@@ -36,16 +37,24 @@ export default function Contacts() {
   return (
     <div className="pb-16">
       <div className="sticky top-0 bg-wechat-bg px-4 py-2 z-10">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-wechat-gray" size={18} />
-          <input
-            type="text"
-            placeholder="搜索微信号/昵称"
-            value={keyword}
-            onChange={e => setKeyword(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleSearch()}
-            className="w-full pl-10 pr-4 py-2 bg-white rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-wechat-green/50"
-          />
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-wechat-gray" size={18} />
+            <input
+              type="text"
+              placeholder="搜索微信号/昵称"
+              value={keyword}
+              onChange={e => setKeyword(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSearch()}
+              className="w-full pl-10 pr-4 py-2 bg-white rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-wechat-green/50"
+            />
+          </div>
+          <button 
+            onClick={handleSearch}
+            className="px-4 py-2 bg-wechat-green text-white rounded-lg font-medium active:scale-95 transition"
+          >
+            搜索
+          </button>
         </div>
       </div>
 
