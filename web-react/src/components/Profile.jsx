@@ -1,8 +1,9 @@
 import { useStore } from '../store'
 import { useState, useRef } from 'react'
-import { LogOut, ChevronRight, User, Settings, QrCode, Moon, Sun, Type, Image, X, Download } from 'lucide-react'
+import { LogOut, ChevronRight, User, Settings, QrCode, Moon, Sun, Type, Image, X, Download, Scan } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { QRCodeSVG } from 'qrcode.react'
+import QRScanner from './QRScanner'
 
 export default function Profile() {
   const user = useStore(s => s.user)
@@ -16,6 +17,7 @@ export default function Profile() {
   const needVerification = user?.need_verification
   
   const [showQR, setShowQR] = useState(false)
+  const [showScanner, setShowScanner] = useState(false)
   const fileInput = useRef(null)
 
   const handleAvatarChange = async (e) => {
@@ -55,6 +57,7 @@ export default function Profile() {
     { icon: isDark ? Sun : Moon, label: isDark ? '浅色模式' : '深色模式', action: toggleDark },
     { icon: Type, label: '字体大小', desc: `${fontSize}px` },
     { icon: QrCode, label: '我的二维码', action: () => setShowQR(true) },
+    { icon: Scan, label: '扫一扫', action: () => setShowScanner(true) },
   ]
 
   const privacyItems = [
@@ -180,6 +183,13 @@ export default function Profile() {
               </button>
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* QR Scanner Modal */}
+      <AnimatePresence>
+        {showScanner && (
+          <QRScanner onClose={() => setShowScanner(false)} />
         )}
       </AnimatePresence>
     </div>

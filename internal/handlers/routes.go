@@ -45,6 +45,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *services.RedisService, hub *
 			protected.POST("/friends/delete", friendH.DeleteFriend)
 			protected.GET("/friends/recommend", friendH.GetRecommend)
 			protected.PUT("/friends/verify-setting", friendH.UpdateVerifySetting)
+			protected.POST("/friends/qr-add", friendH.QRCodeAddFriend)
 			protected.POST("/users/search", friendH.SearchUser)
 
 			protected.POST("/messages/send", msgH.SendMessage)

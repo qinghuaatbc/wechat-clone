@@ -351,3 +351,76 @@ func (h *FriendHandler) UpdateVerifySetting(c *gin.Context) {
 	h.DB.Model(&models.User{}).Where("id = ?", userID).Update("need_verification", req.NeedVerification)
 	c.JSON(http.StatusOK, gin.H{"message": "setting updated"})
 }
+
+func (h *FriendHandler) QRCodeAddFriend(c *gin.Context) {
+	userID := getUserID(c)
+	var req struct {
+		TargetID string `json:"target_id" binding:"required"`
+		Message  string `json:"message"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	targetUUID, err := uuid.Parse(req.TargetID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid QR code"})
+		return
+	}
+
+	if targetUUID == userID {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot add yourself"})
+		return
+	}
+
+	var target models.User
+	if err := h.DB.First(&target, "id = ?", targetUUID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+
+	var exists int64
+	h.DB.Model(&models.Friendship{}).
+		Where("(user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)",
+			userID, target.ID, target.ID, userID).Count(&exists)
+	if exists > 0 {
+		c.JSON(http.StatusConflict, gin.H{"error": "already friends"})
+		return
+	}
+
+	var pending int64
+	h.DB.Model(&models.FriendRequest{}).
+		Where("(from_id = ? AND to_id = ? AND status = ?) OR (from_id = ? AND to_id = ? AND status = ?)",
+			userID, target.ID, models.RequestPending,
+			target.ID, userID, models.RequestPending).Count(&pending)
+	if pending > 0 {
+		c.JSON(http.StatusConflict, gin.H{"error": "request already sent"})
+		return
+	}
+
+	var friendReq models.FriendRequest
+	h.DB.Where("from_id = ? AND to_id = ? AND status = ?", target.ID, userID, models.RequestPending).First(&friendReq)
+	if friendReq.ID > 0 {
+		h.DB.Model(&friendReq).Update("status", models.RequestAccepted)
+		h.DB.Create(&models.Friendship{UserID: userID, FriendID: target.ID, Status: 1})
+		h.DB.Create(&models.Friendship{UserID: target.ID, FriendID: userID, Status: 1})
+		c.JSON(http.StatusOK, gin.H{"message": "friend added"})
+		return
+	}
+
+	if !target.NeedVerification {
+		h.DB.Create(&models.Friendship{UserID: userID, FriendID: target.ID, Status: 1})
+		h.DB.Create(&models.Friendship{UserID: target.ID, FriendID: userID, Status: 1})
+		c.JSON(http.StatusOK, gin.H{"message": "friend added"})
+		return
+	}
+
+	msg := req.Message
+	if msg == "" {
+		msg = "你好，我想加你为好友"
+	}
+
+	h.DB.Create(&models.FriendRequest{FromID: userID, ToID: target.ID, Message: msg, Status: models.RequestPending})
+	c.JSON(http.StatusOK, gin.H{"message": "request sent"})
+}
