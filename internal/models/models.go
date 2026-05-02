@@ -56,6 +56,8 @@ type Message struct {
 	GroupID     *uuid.UUID `gorm:"type:uuid"`
 	Type        int       `gorm:"default:1"`
 	Content     string    `gorm:"type:text"`
+	FileName    string    `gorm:"size:256"` // 文件名
+	FileSize    int64     `gorm:"default:0"` // 文件大小
 	QuoteContent string   `gorm:"type:text"` // 引用内容
 	IsRecalled  bool      `gorm:"default:false"` // 是否撤回
 	Status      int       `gorm:"default:1"`

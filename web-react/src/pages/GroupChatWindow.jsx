@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, Fragment } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Send, Image, Loader2, Check, CheckCheck, Copy, CornerDownRight, RotateCcw, Smile, Users, UserPlus, X } from 'lucide-react'
+import { ArrowLeft, Send, Image, Loader2, Check, CheckCheck, Copy, CornerDownRight, RotateCcw, Smile, Users, UserPlus, X, Video, FileText, File, ChevronUp, Download } from 'lucide-react'
 import { useStore } from '../store'
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -85,6 +85,8 @@ export default function GroupChatWindow() {
   const [quote, setQuote] = useState(null)
   const [showMembers, setShowMembers] = useState(false)
   const [showAddMember, setShowAddMember] = useState(false)
+  const [showAttachMenu, setShowAttachMenu] = useState(false)
+  const [uploading, setUploading] = useState(false)
 
   const group = groups.find(g => g.id === groupId) || { name: '未知群聊' }
 
@@ -157,6 +159,65 @@ export default function GroupChatWindow() {
     await fetch('/api/messages/send', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ group_id: groupId, content: data.url, type: 3 }) })
   }
 
+  const handleVideoUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    await uploadAndSend(file, groupId, 4)
+  }
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    await uploadAndSend(file, groupId, 5)
+  }
+
+  const uploadAndSend = async (file, targetId, type) => {
+    if (file.size > 100 * 1024 * 1024) {
+      toast.error('文件大小不能超过100MB')
+      return
+    }
+    setUploading(true)
+    setShowAttachMenu(false)
+
+    const formData = new FormData()
+    formData.append('file', file)
+
+    try {
+      const res = await fetch('/api/upload', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: formData })
+      const data = await res.json()
+      
+      const tempId = `${type === 4 ? 'vid' : 'file'}-${Date.now()}`
+      const msg = {
+        id: tempId,
+        sender_id: user.id,
+        group_id: targetId,
+        content: data.url,
+        file_name: data.filename,
+        file_size: data.size,
+        type: type,
+        created_at: new Date().toISOString()
+      }
+      useStore.getState().addMessage(msg)
+      
+      await fetch('/api/messages/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ group_id: targetId, content: data.url, type: type, file_name: data.filename, file_size: data.size })
+      })
+    } catch (e) {
+      toast.error('上传失败')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const formatFileSize = (bytes) => {
+    if (!bytes) return ''
+    if (bytes < 1024) return bytes + ' B'
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+  }
+
   const handleAddMembers = async (selectedIds) => {
     try {
       await fetch(`/api/groups/${groupId}/members`, {
@@ -210,6 +271,23 @@ export default function GroupChatWindow() {
             
             {msg.type === 3 ? (
               <img src={msg.content} alt="" className="max-w-[200px] rounded-lg cursor-pointer" onClick={() => setPreviewImage(msg.content)} />
+            ) : msg.type === 4 ? (
+              <div className="relative">
+                <video src={msg.content} className="max-w-[200px] rounded-lg" preload="metadata" controls />
+              </div>
+            ) : msg.type === 5 ? (
+              <div className="flex items-center gap-3 min-w-[180px]">
+                <div className="w-10 h-10 rounded-lg bg-wechat-bg dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+                  <File size={20} className="text-wechat-green" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate dark:text-white">{msg.file_name || '文件'}</p>
+                  <p className="text-xs text-wechat-gray">{formatFileSize(msg.file_size)}</p>
+                </div>
+                <a href={msg.content} download={msg.file_name} className="p-1.5 rounded-full hover:bg-wechat-bg dark:hover:bg-gray-700 transition">
+                  <Download size={18} className="text-wechat-green" />
+                </a>
+              </div>
             ) : msg.type === 2 ? (
               <audio controls src={msg.content} className="w-48 h-8" preload="none" />
             ) : (
@@ -285,10 +363,32 @@ export default function GroupChatWindow() {
       <div className="flex items-center gap-2 p-3 bg-wechat-bar dark:bg-wechat-dark border-t border-wechat-border pb-6 sm:pb-3">
         <button onClick={() => setShowEmoji(!showEmoji)} className="p-2 active:bg-wechat-bg rounded transition"><Smile size={26} className="text-wechat-gray" /></button>
         
-        <label className="p-2 active:bg-wechat-bg rounded transition cursor-pointer">
-          <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-          <Image size={26} className="text-wechat-gray" />
-        </label>
+        <div className="relative">
+          <button onClick={() => setShowAttachMenu(!showAttachMenu)} className="p-2 active:bg-wechat-bg rounded transition"><ChevronUp size={26} className={`text-wechat-gray transition ${showAttachMenu ? 'rotate-180' : ''}`} /></button>
+          
+          {showAttachMenu && (
+            <>
+              <div className="fixed inset-0 z-30" onClick={() => setShowAttachMenu(false)} />
+              <div className="absolute bottom-12 left-0 bg-white dark:bg-wechat-dark rounded-xl shadow-xl py-2 min-w-40 z-40">
+                <label className="flex items-center gap-3 px-4 py-2.5 hover:bg-wechat-bg dark:hover:bg-gray-800 transition cursor-pointer">
+                  <Video size={18} className="text-wechat-green" />
+                  <span className="text-sm dark:text-wechat-darkText">视频</span>
+                  <input type="file" accept="video/*" className="hidden" onChange={handleVideoUpload} />
+                </label>
+                <label className="flex items-center gap-3 px-4 py-2.5 hover:bg-wechat-bg dark:hover:bg-gray-800 transition cursor-pointer">
+                  <FileText size={18} className="text-wechat-blue" />
+                  <span className="text-sm dark:text-wechat-darkText">文件</span>
+                  <input type="file" className="hidden" onChange={handleFileUpload} />
+                </label>
+                <label className="flex items-center gap-3 px-4 py-2.5 hover:bg-wechat-bg dark:hover:bg-gray-800 transition cursor-pointer">
+                  <Image size={18} className="text-wechat-green" />
+                  <span className="text-sm dark:text-wechat-darkText">图片</span>
+                  <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                </label>
+              </div>
+            </>
+          )}
+        </div>
         
         <input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendTextMessage()} placeholder="输入消息..." className="flex-1 px-4 py-2.5 bg-white dark:bg-wechat-dark rounded-lg text-base focus:outline-none" />
         
@@ -296,6 +396,16 @@ export default function GroupChatWindow() {
           {sending ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
         </button>
       </div>
+
+      {/* Upload Progress */}
+      {uploading && (
+        <div className="px-4 py-2 bg-wechat-bg dark:bg-gray-800 border-t border-wechat-border">
+          <div className="flex items-center gap-2">
+            <Loader2 size={16} className="animate-spin text-wechat-green" />
+            <span className="text-sm text-wechat-gray">上传中...</span>
+          </div>
+        </div>
+      )}
 
       {/* Context Menu */}
       <AnimatePresence>

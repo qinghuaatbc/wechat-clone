@@ -29,6 +29,8 @@ type MsgInfo struct {
 	GroupID      *uuid.UUID `json:"group_id,omitempty"`
 	Type         int       `json:"type"`
 	Content      string    `json:"content"`
+	FileName     string    `json:"file_name"`
+	FileSize     int64     `json:"file_size"`
 	QuoteContent string    `json:"quote_content"`
 	IsRecalled   bool      `json:"is_recalled"`
 	Status       int       `json:"status"`
@@ -43,6 +45,8 @@ func toMsgInfo(m models.Message) MsgInfo {
 		GroupID:      m.GroupID,
 		Type:         m.Type,
 		Content:      m.Content,
+		FileName:     m.FileName,
+		FileSize:     m.FileSize,
 		QuoteContent: m.QuoteContent,
 		IsRecalled:   m.IsRecalled,
 		Status:       m.Status,
@@ -57,6 +61,8 @@ type SendMsgReq struct {
 	Content      string    `json:"content" binding:"required"`
 	QuoteContent string    `json:"quote_content"`
 	QuoteMsgID   uint      `json:"quote_msg_id"`
+	FileName     string    `json:"file_name"`
+	FileSize     int64     `json:"file_size"`
 }
 
 func (h *MessageHandler) SendMessage(c *gin.Context) {
@@ -72,6 +78,8 @@ func (h *MessageHandler) SendMessage(c *gin.Context) {
 		Type:         req.Type,
 		Content:      req.Content,
 		QuoteContent: req.QuoteContent,
+		FileName:     req.FileName,
+		FileSize:     req.FileSize,
 		Status:       1,
 	}
 
@@ -96,6 +104,8 @@ func (h *MessageHandler) SendMessage(c *gin.Context) {
 		"group_id":     msg.GroupID,
 		"type":         msg.Type,
 		"content":      msg.Content,
+		"file_name":    msg.FileName,
+		"file_size":    msg.FileSize,
 		"quote_content": msg.QuoteContent,
 		"is_recalled":  msg.IsRecalled,
 		"created_at":   msg.CreatedAt,

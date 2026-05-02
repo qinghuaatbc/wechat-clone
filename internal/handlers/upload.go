@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -38,5 +39,30 @@ func (h *UploadHandler) UploadFile(c *gin.Context) {
 	}
 
 	url := "/uploads/" + filename
-	c.JSON(http.StatusOK, gin.H{"url": url})
+	fileType := detectFileType(file.Filename)
+
+	c.JSON(http.StatusOK, gin.H{"url": url, "type": fileType, "filename": file.Filename, "size": file.Size})
+}
+
+func detectFileType(filename string) string {
+	ext := strings.ToLower(filepath.Ext(filename))
+	
+	videoExts := map[string]bool{".mp4": true, ".avi": true, ".mov": true, ".mkv": true, ".webm": true, ".flv": true, ".wmv": true}
+	imageExts := map[string]bool{".jpg": true, ".jpeg": true, ".png": true, ".gif": true, ".webp": true, ".bmp": true}
+	audioExts := map[string]bool{".mp3": true, ".wav": true, ".ogg": true, ".flac": true, ".aac": true, ".m4a": true}
+	docExts := map[string]bool{".pdf": true, ".doc": true, ".docx": true, ".xls": true, ".xlsx": true, ".ppt": true, ".pptx": true, ".txt": true, ".csv": true, ".zip": true, ".rar": true, ".7z": true}
+
+	if videoExts[ext] {
+		return "video"
+	}
+	if imageExts[ext] {
+		return "image"
+	}
+	if audioExts[ext] {
+		return "audio"
+	}
+	if docExts[ext] {
+		return "file"
+	}
+	return "file"
 }
