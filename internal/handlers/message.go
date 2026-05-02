@@ -22,7 +22,33 @@ func NewMessageHandler(db *gorm.DB, redis *services.RedisService, hub *services.
 	return &MessageHandler{DB: db, Redis: redis, Hub: hub}
 }
 
-type SendMsgReq struct {
+type MsgInfo struct {
+	ID           uint      `json:"id"`
+	SenderID     uuid.UUID `json:"sender_id"`
+	ReceiverID   *uuid.UUID `json:"receiver_id,omitempty"`
+	GroupID      *uuid.UUID `json:"group_id,omitempty"`
+	Type         int       `json:"type"`
+	Content      string    `json:"content"`
+	QuoteContent string    `json:"quote_content"`
+	IsRecalled   bool      `json:"is_recalled"`
+	Status       int       `json:"status"`
+	CreatedAt    string    `json:"created_at"`
+}
+
+func toMsgInfo(m models.Message) MsgInfo {
+	return MsgInfo{
+		ID:           m.ID,
+		SenderID:     m.SenderID,
+		ReceiverID:   m.ReceiverID,
+		GroupID:      m.GroupID,
+		Type:         m.Type,
+		Content:      m.Content,
+		QuoteContent: m.QuoteContent,
+		IsRecalled:   m.IsRecalled,
+		Status:       m.Status,
+		CreatedAt:    m.CreatedAt.Format(time.RFC3339),
+	}
+}
 	ReceiverID   uuid.UUID `json:"receiver_id"`
 	GroupID      uuid.UUID `json:"group_id"`
 	Type         int       `json:"type"`
@@ -104,7 +130,12 @@ func (h *MessageHandler) GetHistory(c *gin.Context) {
 	var msgs []models.Message
 	query.Order("created_at DESC").Limit(pageSize).Offset((page - 1) * pageSize).Find(&msgs)
 
-	c.JSON(http.StatusOK, gin.H{"messages": msgs})
+	msgInfos := make([]MsgInfo, len(msgs))
+	for i, m := range msgs {
+		msgInfos[i] = toMsgInfo(m)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"messages": msgInfos})
 }
 
 func (h *MessageHandler) RecallMessage(c *gin.Context) {

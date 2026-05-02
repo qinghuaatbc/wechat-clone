@@ -1,7 +1,8 @@
 import { useStore } from '../store'
 import { useState, useRef } from 'react'
-import { LogOut, ChevronRight, User, Settings, QrCode, Moon, Sun, Type, Image } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { LogOut, ChevronRight, User, Settings, QrCode, Moon, Sun, Type, Image, X, Download } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { QRCodeSVG } from 'qrcode.react'
 
 export default function Profile() {
   const user = useStore(s => s.user)
@@ -12,7 +13,7 @@ export default function Profile() {
   const setFontSize = useStore(s => s.setFontSize)
   const updateProfile = useStore(s => s.updateProfile)
   
-  const [editing, setEditing] = useState(false)
+  const [showQR, setShowQR] = useState(false)
   const fileInput = useRef(null)
 
   const handleAvatarChange = async (e) => {
@@ -20,6 +21,27 @@ export default function Profile() {
     if (file) {
       await updateProfile({ avatarFile: file })
     }
+  }
+
+  const handleDownloadQR = () => {
+    const svg = document.getElementById('qr-code-svg')
+    if (!svg) return
+    const svgData = new XMLSerializer().serializeToString(svg)
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    const img = new Image()
+    img.onload = () => {
+      canvas.width = img.width
+      canvas.height = img.height
+      ctx.fillStyle = '#fff'
+      ctx.fillRect(0, 0, img.width, img.height)
+      ctx.drawImage(img, 0, 0)
+      const link = document.createElement('a')
+      link.download = `wechat-qr-${user?.wxid}.png`
+      link.href = canvas.toDataURL()
+      link.click()
+    }
+    img.src = 'data:image/svg+xml;base64,' + btoa(svgData)
   }
 
   const menuItems = [
@@ -30,7 +52,7 @@ export default function Profile() {
     { icon: Image, label: '更换头像', action: () => fileInput.current.click() },
     { icon: isDark ? Sun : Moon, label: isDark ? '浅色模式' : '深色模式', action: toggleDark },
     { icon: Type, label: '字体大小', desc: `${fontSize}px` },
-    { icon: QrCode, label: '我的二维码' },
+    { icon: QrCode, label: '我的二维码', action: () => setShowQR(true) },
   ]
 
   return (
@@ -88,6 +110,54 @@ export default function Profile() {
         </button>
 
       </div>
+
+      {/* QR Code Modal */}
+      <AnimatePresence>
+        {showQR && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-6"
+            onClick={() => setShowQR(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              className="bg-white dark:bg-wechat-dark rounded-2xl p-8 w-full max-w-sm text-center"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-bold dark:text-white">我的二维码</h3>
+                <button onClick={() => setShowQR(false)} className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <X size={20} className="text-wechat-gray" />
+                </button>
+              </div>
+
+              <div className="bg-white p-4 rounded-xl inline-block shadow-inner mb-4">
+                <QRCodeSVG
+                  id="qr-code-svg"
+                  value={`wechat://user/${user?.wxid}`}
+                  size={200}
+                  level="H"
+                  includeMargin
+                />
+              </div>
+
+              <p className="text-wechat-gray text-sm mb-2">微信号: {user?.wxid}</p>
+              <p className="text-wechat-gray text-xs mb-4">扫描二维码添加我为好友</p>
+
+              <button
+                onClick={handleDownloadQR}
+                className="flex items-center justify-center gap-2 mx-auto px-6 py-2.5 bg-wechat-green text-white rounded-full text-sm font-medium hover:opacity-90 transition"
+              >
+                <Download size={16} /> 保存到手机
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

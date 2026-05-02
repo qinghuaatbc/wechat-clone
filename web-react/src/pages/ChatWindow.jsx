@@ -7,9 +7,37 @@ import { motion, AnimatePresence } from 'framer-motion'
 
 const EMOJIS = ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '😚', '😙', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '🤥', '😌', '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '🥴', '😵', '🤯', '🤠', '🥳', '😎', '🤓', '🧐', '😕', '😟', '🙁', '😮', '😯', '😲', '😳', '🥺', '😦', '😧', '😨', '😰', '😥', '😢', '😭', '😱', '😖', '😣', '😞', '😓', '😩', '😫', '🥱', '😤', '😡', '😠', '🤬', '😈', '👿', '💀', '☠️', '💩', '🤡', '👹', '👺', '👻', '👽', '👾', '🤖']
 
+const isValidDate = (dateStr) => {
+  if (!dateStr) return false
+  const d = new Date(dateStr)
+  return d instanceof Date && !isNaN(d) && d.getFullYear() > 2000
+}
+
 const formatTime = (dateStr) => {
+  if (!isValidDate(dateStr)) return ''
   const d = new Date(dateStr)
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+
+const formatDate = (dateStr) => {
+  if (!isValidDate(dateStr)) return ''
+  const d = new Date(dateStr)
+  const now = new Date()
+  const diffDays = Math.floor((now - d) / (1000 * 60 * 60 * 24))
+  if (diffDays === 0) return '今天 ' + formatTime(dateStr)
+  if (diffDays === 1) return '昨天 ' + formatTime(dateStr)
+  if (diffDays < 7) return ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'][d.getDay()] + ' ' + formatTime(dateStr)
+  return d.toLocaleDateString() + ' ' + formatTime(dateStr)
+}
+
+const getDateForCompare = (dateStr) => {
+  if (!isValidDate(dateStr)) return ''
+  return new Date(dateStr).toDateString()
+}
+
+const getTimeDiffMinutes = (dateStr1, dateStr2) => {
+  if (!isValidDate(dateStr1) || !isValidDate(dateStr2)) return 0
+  return Math.abs(new Date(dateStr1) - new Date(dateStr2)) / (1000 * 60)
 }
 
 // 2. 图片压缩辅助函数
@@ -85,12 +113,13 @@ export default function ChatWindow() {
 
   const friend = isFileHelper ? { nickname: '文件传输助手' } : (friends.find(f => f.id === id) || { nickname: '未知用户' })
 
+  const convId = isFileHelper ? user?.id : id
+
   useEffect(() => {
     if (!user?.id) return
-    const targetId = isFileHelper ? user.id : id
-    loadMessages(targetId)
+    loadMessages(convId)
     if (!isFileHelper) clearUnread(id)
-  }, [id, loadMessages, clearUnread, isFileHelper, user?.id])
+  }, [convId, loadMessages, clearUnread, isFileHelper, user?.id])
 
   const sendTextMessage = async () => {
     if (!input.trim() && !quote) return
@@ -100,12 +129,12 @@ export default function ChatWindow() {
     const msg = {
       id: `temp-${Date.now()}`,
       sender_id: user.id,
-      receiver_id: isFileHelper ? user.id : id, // If file helper, backend handles logic, but here we can just send to self or specific ID
-      // Wait, backend expects receiver_id. If I send user.id, it works as self-message.
+      receiver_id: isFileHelper ? user.id : id,
       content: input.trim(),
       type: 1,
       quote_content: quote,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      is_recalled: false
     }
 
     useStore.getState().addMessage(msg)
@@ -116,7 +145,7 @@ export default function ChatWindow() {
       await fetch('/api/messages/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ receiver_id: id, content: msg.content, type: 1, quote_content: msg.quote_content })
+        body: JSON.stringify({ receiver_id: isFileHelper ? user.id : id, content: msg.content, type: 1, quote_content: msg.quote_content })
       })
     } catch (e) {
       toast.error('消息发送失败')
@@ -225,17 +254,22 @@ export default function ChatWindow() {
           ) : (
             <>
               {messages.map((m, i) => {
-                if (i === 0 || new Date(m.created_at).getDate() !== new Date(messages[i - 1]?.created_at).getDate()) {
-                    return (
-                    <Fragment key={m.id}>
-                      <div className="flex justify-center my-4">
-                        <span className="text-xs text-wechat-gray bg-wechat-bg px-3 py-1 rounded-full">{new Date(m.created_at).toLocaleDateString()}</span>
-                      </div>
-                      {renderMessage(m)}
-                    </Fragment>
-                  )
-                }
-                return <Fragment key={m.id}>{renderMessage(m)}</Fragment>
+                const showTime = isValidDate(m.created_at) && (
+                  i === 0 || 
+                  getDateForCompare(m.created_at) !== getDateForCompare(messages[i - 1]?.created_at) ||
+                  getTimeDiffMinutes(m.created_at, messages[i - 1]?.created_at) > 5
+                )
+
+                return (
+                <Fragment key={m.id}>
+                  {showTime && (
+                    <div className="flex justify-center my-3">
+                      <span className="text-xs text-wechat-gray bg-wechat-bg px-2 py-1 rounded">{formatDate(m.created_at)}</span>
+                    </div>
+                  )}
+                  {renderMessage(m)}
+                </Fragment>
+              )
               })}
             </>
           )}
