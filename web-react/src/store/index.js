@@ -254,6 +254,15 @@ export const useStore = create((set, get) => ({
     }))
   },
 
+  deleteMessage: (convId, msgId) => {
+    set(state => {
+      const msgs = state.messages[convId] || []
+      return {
+        messages: { ...state.messages, [convId]: msgs.filter(m => m.id !== msgId) }
+      }
+    })
+  },
+
   clearUnread: (conversationId) => {
     set(state => ({ unread: { ...state.unread, [conversationId]: 0 } }))
   },

@@ -51,6 +51,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *services.RedisService, hub *
 			protected.POST("/messages/send", msgH.SendMessage)
 			protected.GET("/messages", msgH.GetHistory)
 			protected.POST("/messages/recall", msgH.RecallMessage)
+			protected.DELETE("/messages/:id", msgH.DeleteMessage)
 
 			protected.POST("/groups", groupH.CreateGroup)
 			protected.GET("/groups", groupH.GetGroups)

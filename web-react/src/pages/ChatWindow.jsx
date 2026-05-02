@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, Fragment } from 'react'
+import { useState, useEffect, useRef, useCallback, Fragment, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Send, Image, Loader2, ChevronUp, Check, CheckCheck, Copy, CornerDownRight, RotateCcw, Smile, Video, FileText, Play, Download, File, X, Trash2 } from 'lucide-react'
 import { useStore } from '../store'
@@ -97,7 +97,8 @@ export default function ChatWindow() {
   const user = useStore(s => s.user)
   
   const isFileHelper = id === 'file-helper'
-  const messages = useStore(s => isFileHelper ? (s.messages[user?.id] || []) : (s.messages[id] || []))
+  const rawMessages = useStore(s => isFileHelper ? (s.messages[user?.id] || []) : (s.messages[id] || []))
+  const messages = useMemo(() => [...rawMessages].sort((a, b) => new Date(a.created_at) - new Date(b.created_at)), [rawMessages])
   const loadMessages = useStore(s => s.loadMessages)
   const clearUnread = useStore(s => s.clearUnread)
   const setPreviewImage = useStore(s => s.setPreviewImage)
@@ -113,6 +114,7 @@ export default function ChatWindow() {
   const [showAttachMenu, setShowAttachMenu] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(null)
+  const [longPressTimer, setLongPressTimer] = useState(null)
   const videoInputRef = useRef(null)
   const fileInputRef = useRef(null)
   const imageInputRef = useRef(null)
@@ -210,6 +212,7 @@ export default function ChatWindow() {
   const handleVideoUpload = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
+    setShowAttachMenu(false)
     await uploadAndSend(file, isFileHelper ? user.id : id, 4)
     e.target.value = ''
   }
@@ -217,6 +220,7 @@ export default function ChatWindow() {
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
+    setShowAttachMenu(false)
     await uploadAndSend(file, isFileHelper ? user.id : id, 5)
     e.target.value = ''
   }
@@ -264,8 +268,7 @@ export default function ChatWindow() {
   }
 
   const openFilePicker = (ref) => {
-    setShowAttachMenu(false)
-    setTimeout(() => ref.current?.click(), 50)
+    ref.current?.click()
   }
 
   const formatFileSize = (bytes) => {
@@ -290,18 +293,32 @@ export default function ChatWindow() {
     if (msg.is_recalled) return handleRecalledMessage(msg)
 
     const isMine = msg.sender_id === user?.id
-    return (
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex ${isMine ? 'justify-end' : 'justify-start'} mb-3 px-4`}>
-        <div className="flex items-end gap-2 max-w-[80%]">
-          {!isMine && (
-            <div className="w-8 h-8 rounded-lg bg-wechat-green/20 flex items-center justify-center text-wechat-green text-sm font-bold flex-shrink-0">
-              {friend.nickname?.[0] || '?'}
-            </div>
-          )}
+          const handleTouchStart = (e) => {
+            const timer = setTimeout(() => {
+              setContextMenu({ x: e.touches[0].clientX, y: e.touches[0].clientY, msg })
+            }, 500)
+            setLongPressTimer(timer)
+          }
+
+          const handleTouchEnd = () => {
+            if (longPressTimer) clearTimeout(longPressTimer)
+          }
           
-          <div className={`px-3.5 py-2 rounded-2xl text-[15px] relative ${isMine ? 'bg-wechat-green text-white rounded-tr-sm' : 'bg-white text-wechat-dark rounded-tl-sm shadow-sm'}`}
-            onContextMenu={(e) => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY, msg }) }}
-          >
+          return (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex ${isMine ? 'justify-end' : 'justify-start'} mb-3 px-4`}>
+              <div className="flex items-end gap-2 max-w-[80%]">
+                {!isMine && (
+                  <div className="w-8 h-8 rounded-lg bg-wechat-green/20 flex items-center justify-center text-wechat-green text-sm font-bold flex-shrink-0">
+                    {friend.nickname?.[0] || '?'}
+                  </div>
+                )}
+                
+                <div className={`px-3.5 py-2 rounded-2xl text-[15px] relative ${isMine ? 'bg-wechat-green text-white rounded-tr-sm' : 'bg-white text-wechat-dark rounded-tl-sm shadow-sm'}`}
+                  onContextMenu={(e) => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY, msg }) }}
+                  onTouchStart={handleTouchStart}
+                  onTouchEnd={handleTouchEnd}
+                  onTouchMove={handleTouchEnd}
+                >
             {msg.quote_content && (
               <div className={`mb-1.5 pl-2 py-1 border-l-2 text-xs rounded ${isMine ? 'border-white/50 bg-white/20' : 'border-wechat-green/50 bg-wechat-bg'}`}>
                 <CornerDownRight size={12} className="inline mr-1 mb-0.5" />
@@ -466,9 +483,9 @@ export default function ChatWindow() {
         </AnimatePresence>
 
         {/* Hidden file inputs */}
-        <input ref={videoInputRef} type="file" accept="video/*" className="hidden" onChange={handleVideoUpload} />
-        <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} />
-        <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+        <input ref={videoInputRef} type="file" accept="video/*" className="absolute -top-full -left-full opacity-0 pointer-events-none" onChange={handleVideoUpload} />
+        <input ref={fileInputRef} type="file" className="absolute -top-full -left-full opacity-0 pointer-events-none" onChange={handleFileUpload} />
+        <input ref={imageInputRef} type="file" accept="image/*" className="absolute -top-full -left-full opacity-0 pointer-events-none" onChange={handleImageUpload} />
 
         {/* Image Preview */}
         <AnimatePresence>

@@ -200,3 +200,22 @@ func (h *MessageHandler) RecallMessage(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "recalled"})
 }
+
+func (h *MessageHandler) DeleteMessage(c *gin.Context) {
+	userID := getUserID(c)
+	msgID := c.Param("id")
+
+	var msg models.Message
+	if err := h.DB.First(&msg, msgID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "message not found"})
+		return
+	}
+
+	if msg.SenderID != userID && (msg.ReceiverID == nil || *msg.ReceiverID != userID) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	h.DB.Delete(&msg)
+	c.JSON(http.StatusOK, gin.H{"message": "deleted"})
+}

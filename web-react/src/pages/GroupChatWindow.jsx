@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, Fragment } from 'react'
+import { useState, useEffect, useRef, useCallback, Fragment, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Send, Image, Loader2, Check, CheckCheck, Copy, CornerDownRight, RotateCcw, Smile, Users, UserPlus, X, Video, FileText, File, ChevronUp, Download, Trash2 } from 'lucide-react'
 import { useStore } from '../store'
@@ -87,6 +87,7 @@ export default function GroupChatWindow() {
   const [showAddMember, setShowAddMember] = useState(false)
   const [showAttachMenu, setShowAttachMenu] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [longPressTimer, setLongPressTimer] = useState(null)
   const videoInputRef = useRef(null)
   const fileInputRef = useRef(null)
   const imageInputRef = useRef(null)
@@ -164,6 +165,17 @@ export default function GroupChatWindow() {
     }
   }
 
+  const handleTouchStart = (msg) => (e) => {
+    const timer = setTimeout(() => {
+      setContextMenu({ x: e.touches[0].clientX, y: e.touches[0].clientY, msg })
+    }, 500)
+    setLongPressTimer(timer)
+  }
+
+  const handleTouchEnd = () => {
+    if (longPressTimer) clearTimeout(longPressTimer)
+  }
+
   const handleImageUpload = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -181,6 +193,7 @@ export default function GroupChatWindow() {
   const handleVideoUpload = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
+    setShowAttachMenu(false)
     await uploadAndSend(file, groupId, 4)
     e.target.value = ''
   }
@@ -188,6 +201,7 @@ export default function GroupChatWindow() {
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
+    setShowAttachMenu(false)
     await uploadAndSend(file, groupId, 5)
     e.target.value = ''
   }
@@ -240,8 +254,7 @@ export default function GroupChatWindow() {
   }
 
   const openFilePicker = (ref) => {
-    setShowAttachMenu(false)
-    setTimeout(() => ref.current?.click(), 50)
+    ref.current?.click()
   }
 
   const handleAddMembers = async (selectedIds) => {
@@ -284,6 +297,9 @@ export default function GroupChatWindow() {
           
           <div className={`px-3.5 py-2 rounded-2xl text-[15px] relative ${isMine ? 'bg-wechat-green text-white rounded-tr-sm' : 'bg-white text-wechat-dark rounded-tl-sm shadow-sm'}`}
             onContextMenu={(e) => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY, msg }) }}
+            onTouchStart={handleTouchStart(msg)}
+            onTouchEnd={handleTouchEnd}
+            onTouchMove={handleTouchEnd}
           >
             {!isMine && (
               <div className="text-xs text-wechat-green mb-0.5 font-medium">{sender?.nickname || '未知用户'}</div>
@@ -431,9 +447,9 @@ export default function GroupChatWindow() {
       )}
 
       {/* Hidden file inputs */}
-      <input ref={videoInputRef} type="file" accept="video/*" className="hidden" onChange={handleVideoUpload} />
-      <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} />
-      <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+      <input ref={videoInputRef} type="file" accept="video/*" className="absolute -top-full -left-full opacity-0 pointer-events-none" onChange={handleVideoUpload} />
+      <input ref={fileInputRef} type="file" className="absolute -top-full -left-full opacity-0 pointer-events-none" onChange={handleFileUpload} />
+      <input ref={imageInputRef} type="file" accept="image/*" className="absolute -top-full -left-full opacity-0 pointer-events-none" onChange={handleImageUpload} />
 
       {/* Context Menu */}
       <AnimatePresence>
