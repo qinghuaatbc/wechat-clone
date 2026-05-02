@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
-import { MessageSquare, Users, Compass, User } from 'lucide-react'
+import { MessageSquare, Users, Compass, User, Scan, Plus, X } from 'lucide-react'
 import ChatList from '../components/ChatList'
 import Contacts from '../components/Contacts'
 import Discover from '../components/Discover'
 import Profile from '../components/Profile'
 import GroupList from '../components/GroupList'
 import QRCode from '../components/QRCode'
+import QRScanner from '../components/QRScanner'
 import { useStore } from '../store'
 
 const TABS = [
@@ -19,6 +20,8 @@ export default function MainLayout() {
   const [activeTab, setActiveTab] = useState('chat')
   const [showGroups, setShowGroups] = useState(false)
   const [showQR, setShowQR] = useState(false)
+  const [showScanner, setShowScanner] = useState(false)
+  const [showPlusMenu, setShowPlusMenu] = useState(false)
   const fetchFriends = useStore(s => s.fetchFriends)
 
   useEffect(() => {
@@ -30,7 +33,7 @@ export default function MainLayout() {
       case 'chat': return <ChatList />
       case 'contacts': return <Contacts />
       case 'discover': return <Discover onGroupClick={() => setShowGroups(true)} />
-      case 'profile': return <Profile onQRClick={() => setShowQR(true)} />
+      case 'profile': return <Profile />
       default: return <ChatList />
     }
   }
@@ -41,8 +44,31 @@ export default function MainLayout() {
         <h1 className="text-lg font-semibold text-center flex-1">
           {TABS.find(t => t.id === activeTab)?.label}
         </h1>
-        {activeTab === 'chat' && (
-          <button className="text-wechat-dark font-bold" onClick={() => setShowGroups(true)}>+</button>
+        {(activeTab === 'chat' || activeTab === 'contacts') && (
+          <div className="relative">
+            <button className="text-wechat-dark font-bold text-xl" onClick={() => setShowPlusMenu(!showPlusMenu)}>+</button>
+            {showPlusMenu && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowPlusMenu(false)} />
+                <div className="absolute right-0 top-10 bg-wechat-bar dark:bg-wechat-dark rounded-lg shadow-xl py-2 min-w-32 z-50">
+                  {activeTab === 'chat' && (
+                    <button
+                      onClick={() => { setShowPlusMenu(false); setShowGroups(true) }}
+                      className="w-full px-4 py-2.5 text-left text-sm hover:bg-wechat-bg dark:hover:bg-gray-800 transition dark:text-wechat-darkText"
+                    >
+                      群聊
+                    </button>
+                  )}
+                  <button
+                    onClick={() => { setShowPlusMenu(false); setShowScanner(true) }}
+                    className="w-full px-4 py-2.5 text-left text-sm hover:bg-wechat-bg dark:hover:bg-gray-800 transition flex items-center gap-2 dark:text-wechat-darkText"
+                  >
+                    <Scan size={16} /> 扫一扫
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         )}
       </header>
 
@@ -67,20 +93,20 @@ export default function MainLayout() {
         })}
       </nav>
 
-      {/* 6. 群聊弹窗 */}
+      {/* 群聊弹窗 */}
       {showGroups && (
         <div className="absolute inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center">
-          <div className="bg-white w-full sm:max-w-sm sm:rounded-2xl rounded-t-2xl max-h-[80vh] overflow-y-auto p-4">
+          <div className="bg-white dark:bg-wechat-dark w-full sm:max-w-sm sm:rounded-2xl rounded-t-2xl max-h-[80vh] overflow-y-auto p-4">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-medium">群聊</h3>
-              <button onClick={() => setShowGroups(false)} className="text-wechat-gray">X</button>
+              <h3 className="font-medium dark:text-white">群聊</h3>
+              <button onClick={() => setShowGroups(false)} className="text-wechat-gray"><X size={20} /></button>
             </div>
             <GroupList onSelect={() => setShowGroups(false)} />
           </div>
         </div>
       )}
 
-      {/* 14. 二维码弹窗 */}
+      {/* 二维码弹窗 */}
       {showQR && (
         <div className="absolute inset-0 bg-black/50 z-50 flex items-center justify-center">
           <div className="bg-white w-full sm:max-w-sm p-6 rounded-2xl text-center">
@@ -88,6 +114,11 @@ export default function MainLayout() {
             <button onClick={() => setShowQR(false)} className="mt-4 w-full py-2 bg-wechat-green text-white rounded-lg">关闭</button>
           </div>
         </div>
+      )}
+
+      {/* 扫一扫 */}
+      {showScanner && (
+        <QRScanner onClose={() => setShowScanner(false)} />
       )}
     </div>
   )
