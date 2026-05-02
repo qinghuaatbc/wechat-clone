@@ -30,6 +30,7 @@ export const useStore = create((set, get) => ({
   user: JSON.parse(localStorage.getItem('user') || 'null'),
   friends: [],
   groups: [],
+  groupMembers: {},
   messages: {},
   unread: {},
   moments: [],
@@ -118,6 +119,25 @@ export const useStore = create((set, get) => ({
       const res = await api.get('/groups')
       set({ groups: res.data.groups || [] })
     } catch (e) { set({ groups: [] }) }
+  },
+
+  fetchGroupMembers: async (groupId) => {
+    try {
+      const res = await api.get(`/groups/${groupId}/members`)
+      set(state => ({ groupMembers: { ...state.groupMembers, [groupId]: res.data.members || [] } }))
+    } catch (e) {}
+  },
+
+  loadGroupMessages: async (groupId) => {
+    if (get().messages[groupId]) return
+    set({ loading: true })
+    try {
+      const res = await api.get(`/messages?group_id=${groupId}`)
+      set(state => ({ 
+        messages: { ...state.messages, [groupId]: res.data.messages || [] }, 
+        unread: { ...state.unread, [groupId]: 0 } 
+      }))
+    } finally { set({ loading: false }) }
   },
 
   fetchMoments: async () => {

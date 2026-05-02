@@ -4,6 +4,7 @@ import { useStore } from './store'
 import Login from './pages/Login'
 import MainLayout from './pages/MainLayout'
 import ChatWindow from './pages/ChatWindow'
+import GroupChatWindow from './pages/GroupChatWindow'
 
 const PrivateRoute = ({ children }) => {
   const token = useStore(s => s.token)
@@ -25,6 +26,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<MainLayout />} />
             <Route path="/chat/:id" element={<ChatWindow />} />
+            <Route path="/chat/group/:groupId" element={<GroupChatWindow />} />
           </Routes>
         </PrivateRoute>
       } />
