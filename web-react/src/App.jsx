@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect } from 'react'
 import { useStore } from './store'
 import Login from './pages/Login'
 import MainLayout from './pages/MainLayout'
@@ -6,6 +7,12 @@ import ChatWindow from './pages/ChatWindow'
 
 const PrivateRoute = ({ children }) => {
   const token = useStore(s => s.token)
+  const fontSize = useStore(s => s.fontSize)
+
+  useEffect(() => {
+    document.documentElement.style.fontSize = `${fontSize}px`
+  }, [fontSize])
+
   return token ? children : <Navigate to="/login" replace />
 }
 

@@ -40,6 +40,34 @@ export const useStore = create((set, get) => ({
   isDark: document.documentElement.classList.contains('dark'),
   fontSize: parseInt(localStorage.getItem('fontSize') || '16'),
 
+  toggleDark: () => {
+    const isDark = document.documentElement.classList.toggle('dark')
+    localStorage.theme = isDark ? 'dark' : 'light'
+    set({ isDark: document.documentElement.classList.contains('dark') })
+  },
+
+  setFontSize: (size) => {
+    localStorage.setItem('fontSize', size)
+    set({ fontSize: size })
+  },
+
+  updateProfile: async (updates) => {
+    set({ loading: true })
+    try {
+      if (updates.avatarFile) {
+        const fd = new FormData()
+        fd.append('file', updates.avatarFile)
+        const res = await api.post('/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+        updates.avatar = res.data.url
+      }
+      const { avatarFile, ...body } = updates
+      await api.put('/profile', body)
+      const user = get().user
+      get().setUser({ ...user, ...body })
+      toast.success('修改成功')
+    } finally { set({ loading: false }) }
+  },
+
   setToken: (token) => { localStorage.setItem('token', token); set({ token }) },
   setUser: (user) => { localStorage.setItem('user', JSON.stringify(user)); set({ user }) },
   

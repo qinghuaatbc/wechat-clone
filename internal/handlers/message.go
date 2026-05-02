@@ -49,6 +49,8 @@ func toMsgInfo(m models.Message) MsgInfo {
 		CreatedAt:    m.CreatedAt.Format(time.RFC3339),
 	}
 }
+
+type SendMsgReq struct {
 	ReceiverID   uuid.UUID `json:"receiver_id"`
 	GroupID      uuid.UUID `json:"group_id"`
 	Type         int       `json:"type"`
