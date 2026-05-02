@@ -7,18 +7,37 @@ import (
 )
 
 type User struct {
-	ID         uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
-	Wxid       string    `gorm:"uniqueIndex;size:32"`
-	Phone      string    `gorm:"uniqueIndex;size:20"`
-	Nickname   string    `gorm:"size:64"`
-	Avatar     string    `gorm:"size:512"`
-	Signature  string    `gorm:"size:256"`
-	Password   string    `gorm:"size:128"`
-	Gender     int       `gorm:"default:0"`
-	Status     int       `gorm:"default:1"`
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
+	ID             uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	Wxid           string    `gorm:"uniqueIndex;size:32"`
+	Phone          string    `gorm:"uniqueIndex;size:20"`
+	Nickname       string    `gorm:"size:64"`
+	Avatar         string    `gorm:"size:512"`
+	Signature      string    `gorm:"size:256"`
+	Password       string    `gorm:"size:128"`
+	Gender         int       `gorm:"default:0"`
+	Status         int       `gorm:"default:1"`
+	NeedVerification bool    `gorm:"default:true"`
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
 }
+
+type FriendRequest struct {
+	ID        uint      `gorm:"primaryKey"`
+	FromID    uuid.UUID `gorm:"type:uuid;index"`
+	ToID      uuid.UUID `gorm:"type:uuid;index"`
+	Message   string    `gorm:"size:256"`
+	Status    int       `gorm:"default:0"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+func (FriendRequest) TableName() string { return "friend_requests" }
+
+const (
+	RequestPending  = 0
+	RequestAccepted = 1
+	RequestRejected = 2
+)
 
 type Friendship struct {
 	ID        uint      `gorm:"primaryKey"`

@@ -38,8 +38,13 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *services.RedisService, hub *
 			protected.PUT("/profile", authH.UpdateProfile)
 
 			protected.GET("/friends", friendH.GetFriends)
-			protected.POST("/friends/add", friendH.AddFriend)
+			protected.POST("/friends/request", friendH.SendFriendRequest)
+			protected.GET("/friends/requests", friendH.GetFriendRequests)
+			protected.POST("/friends/requests/:id/accept", friendH.AcceptRequest)
+			protected.POST("/friends/requests/:id/reject", friendH.RejectRequest)
 			protected.POST("/friends/delete", friendH.DeleteFriend)
+			protected.GET("/friends/recommend", friendH.GetRecommend)
+			protected.PUT("/friends/verify-setting", friendH.UpdateVerifySetting)
 			protected.POST("/users/search", friendH.SearchUser)
 
 			protected.POST("/messages/send", msgH.SendMessage)

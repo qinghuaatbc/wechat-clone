@@ -12,6 +12,8 @@ export default function Profile() {
   const fontSize = useStore(s => s.fontSize)
   const setFontSize = useStore(s => s.setFontSize)
   const updateProfile = useStore(s => s.updateProfile)
+  const updateVerifySetting = useStore(s => s.updateVerifySetting)
+  const needVerification = user?.need_verification
   
   const [showQR, setShowQR] = useState(false)
   const fileInput = useRef(null)
@@ -55,6 +57,14 @@ export default function Profile() {
     { icon: QrCode, label: '我的二维码', action: () => setShowQR(true) },
   ]
 
+  const privacyItems = [
+    { 
+      label: '加我为朋友时需要验证', 
+      desc: needVerification ? '开启' : '关闭',
+      action: () => updateVerifySetting(!needVerification)
+    },
+  ]
+
   return (
     <div className="pb-16 bg-wechat-bg dark:bg-wechat-dark min-h-screen">
       <div className="bg-white dark:bg-wechat-dark p-6 mb-2">
@@ -91,17 +101,31 @@ export default function Profile() {
             </div>
           </div>
         ))}
+      </div>
 
-        {/* Font Size Slider */}
-        {fontSize && (
-          <div className="p-4 bg-white dark:bg-wechat-dark border-t border-wechat-border">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm">字体大小: {fontSize}px</span>
-              <span className="text-sm">A</span>
+      {/* Privacy Settings */}
+      <div className="bg-white dark:bg-wechat-dark divide-y divide-wechat-border mt-2">
+        <div className="px-4 py-2 text-sm text-wechat-gray bg-wechat-bg dark:bg-wechat-dark">
+          隐私设置
+        </div>
+        {privacyItems.map((item, i) => (
+          <div key={i} onClick={item.action} className="flex items-center justify-between p-4 active:bg-wechat-bg dark:active:bg-gray-800 transition cursor-pointer">
+            <span className="font-medium dark:text-wechat-darkText">{item.label}</span>
+            <div className="flex items-center gap-2 text-wechat-gray">
+              <span className="text-sm">{item.desc}</span>
+              <ChevronRight size={18} />
             </div>
-            <input type="range" min="12" max="24" value={fontSize} onChange={e => setFontSize(parseInt(e.target.value))} className="w-full h-2 bg-wechat-bg rounded-lg appearance-none cursor-pointer" />
           </div>
-        )}
+        ))}
+      </div>
+
+      {/* Font Size Slider */}
+      <div className="bg-white dark:bg-wechat-dark mt-2 p-4">
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-sm dark:text-wechat-darkText">字体大小: {fontSize}px</span>
+          <span className="text-sm dark:text-wechat-darkText">A</span>
+        </div>
+        <input type="range" min="12" max="24" value={fontSize} onChange={e => setFontSize(parseInt(e.target.value))} className="w-full h-2 bg-wechat-bg rounded-lg appearance-none cursor-pointer" />
       </div>
 
       <div className="p-4 mt-4">

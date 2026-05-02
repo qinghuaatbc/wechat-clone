@@ -72,10 +72,11 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	token := generateToken(user)
 
 	c.JSON(http.StatusOK, gin.H{
-		"token":    token,
-		"user_id":  user.ID,
-		"wxid":     user.Wxid,
-		"nickname": user.Nickname,
+		"token":             token,
+		"user_id":           user.ID,
+		"wxid":              user.Wxid,
+		"nickname":          user.Nickname,
+		"need_verification": user.NeedVerification,
 	})
 }
 
@@ -102,11 +103,12 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	h.Redis.SetUserOnline(user.ID.String())
 
 	c.JSON(http.StatusOK, gin.H{
-		"token":    token,
-		"user_id":  user.ID,
-		"wxid":     user.Wxid,
-		"nickname": user.Nickname,
-		"avatar":   user.Avatar,
+		"token":             token,
+		"user_id":           user.ID,
+		"wxid":              user.Wxid,
+		"nickname":          user.Nickname,
+		"avatar":            user.Avatar,
+		"need_verification": user.NeedVerification,
 	})
 }
 
@@ -125,13 +127,14 @@ func (h *AuthHandler) GetProfile(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"id":        user.ID,
-		"wxid":      user.Wxid,
-		"phone":     user.Phone,
-		"nickname":  user.Nickname,
-		"avatar":    user.Avatar,
-		"signature": user.Signature,
-		"gender":    user.Gender,
+		"id":                user.ID,
+		"wxid":              user.Wxid,
+		"phone":             user.Phone,
+		"nickname":          user.Nickname,
+		"avatar":            user.Avatar,
+		"signature":         user.Signature,
+		"gender":            user.Gender,
+		"need_verification": user.NeedVerification,
 	})
 }
 

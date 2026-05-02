@@ -34,6 +34,9 @@ export const useStore = create((set, get) => ({
   unread: {},
   moments: [],
   comments: {},
+  incomingRequests: [],
+  pendingRequestCount: 0,
+  recommendUsers: [],
   ws: null,
   previewImage: null,
   loading: false,
@@ -140,13 +143,57 @@ export const useStore = create((set, get) => ({
     } finally { set({ loading: false }) }
   },
 
-  addFriend: async (wxid) => {
+  addFriend: async (targetId, message) => {
     set({ loading: true })
     try {
-      await api.post('/friends/add', { wxid })
-      get().fetchFriends()
-      toast.success('好友已添加')
+      const res = await api.post('/friends/request', { target_id: targetId, message: message || '你好，我想加你为好友' })
+      toast.success(res.data.message === 'request sent' ? '好友请求已发送' : '好友已添加')
     } finally { set({ loading: false }) }
+  },
+
+  cancelRequest: async (requestId) => {
+    try {
+      await api.post(`/friends/requests/${requestId}/reject`)
+      toast.success('已取消请求')
+    } catch (e) {}
+  },
+
+  acceptRequest: async (requestId) => {
+    try {
+      await api.post(`/friends/requests/${requestId}/accept`)
+      toast.success('好友已添加')
+      get().fetchFriends()
+    } catch (e) {}
+  },
+
+  rejectRequest: async (requestId) => {
+    try {
+      await api.post(`/friends/requests/${requestId}/reject`)
+      toast.success('已拒绝')
+    } catch (e) {}
+  },
+
+  fetchFriendRequests: async () => {
+    try {
+      const res = await api.get('/friends/requests?direction=incoming')
+      set({ incomingRequests: res.data.requests || [], pendingRequestCount: res.data.count || 0 })
+    } catch (e) { set({ incomingRequests: [], pendingRequestCount: 0 }) }
+  },
+
+  fetchRecommend: async () => {
+    try {
+      const res = await api.get('/friends/recommend')
+      set({ recommendUsers: res.data.users || [] })
+    } catch (e) { set({ recommendUsers: [] }) }
+  },
+
+  updateVerifySetting: async (needVerification) => {
+    try {
+      await api.put('/friends/verify-setting', { need_verification: needVerification })
+      const user = get().user
+      get().setUser({ ...user, need_verification: needVerification })
+      toast.success('设置已更新')
+    } catch (e) {}
   },
 
   searchUser: async (keyword) => {
