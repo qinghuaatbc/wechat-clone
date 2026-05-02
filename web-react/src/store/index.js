@@ -25,6 +25,8 @@ if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.match
   document.documentElement.classList.remove('dark')
 }
 
+const initialLang = localStorage.getItem('lang') || 'zh'
+
 export const useStore = create((set, get) => ({
   token: localStorage.getItem('token') || null,
   user: JSON.parse(localStorage.getItem('user') || 'null'),
@@ -43,6 +45,13 @@ export const useStore = create((set, get) => ({
   loading: false,
   isDark: document.documentElement.classList.contains('dark'),
   fontSize: parseInt(localStorage.getItem('fontSize') || '16'),
+  lang: initialLang,
+
+  toggleLang: () => {
+    const newLang = get().lang === 'zh' ? 'en' : 'zh'
+    localStorage.setItem('lang', newLang)
+    set({ lang: newLang })
+  },
 
   toggleDark: () => {
     const isDark = document.documentElement.classList.toggle('dark')
@@ -133,8 +142,9 @@ export const useStore = create((set, get) => ({
     set({ loading: true })
     try {
       const res = await api.get(`/messages?group_id=${groupId}`)
+      const msgs = (res.data.messages || []).sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
       set(state => ({ 
-        messages: { ...state.messages, [groupId]: res.data.messages || [] }, 
+        messages: { ...state.messages, [groupId]: msgs }, 
         unread: { ...state.unread, [groupId]: 0 } 
       }))
     } finally { set({ loading: false }) }
@@ -228,8 +238,9 @@ export const useStore = create((set, get) => ({
     set({ loading: true })
     try {
       const res = await api.get(`/messages?target_id=${conversationId}`)
+      const msgs = (res.data.messages || []).sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
       set(state => ({ 
-        messages: { ...state.messages, [conversationId]: res.data.messages || [] }, 
+        messages: { ...state.messages, [conversationId]: msgs }, 
         unread: { ...state.unread, [conversationId]: 0 } 
       }))
     } finally { set({ loading: false }) }

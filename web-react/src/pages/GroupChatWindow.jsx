@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, Fragment } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Send, Image, Loader2, Check, CheckCheck, Copy, CornerDownRight, RotateCcw, Smile, Users, UserPlus, X, Video, FileText, File, ChevronUp, Download } from 'lucide-react'
+import { ArrowLeft, Send, Image, Loader2, Check, CheckCheck, Copy, CornerDownRight, RotateCcw, Smile, Users, UserPlus, X, Video, FileText, File, ChevronUp, Download, Trash2 } from 'lucide-react'
 import { useStore } from '../store'
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -87,6 +87,9 @@ export default function GroupChatWindow() {
   const [showAddMember, setShowAddMember] = useState(false)
   const [showAttachMenu, setShowAttachMenu] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const videoInputRef = useRef(null)
+  const fileInputRef = useRef(null)
+  const imageInputRef = useRef(null)
 
   const group = groups.find(g => g.id === groupId) || { name: '未知群聊' }
 
@@ -147,6 +150,20 @@ export default function GroupChatWindow() {
     toast.info('消息已撤回')
   }
 
+  const handleDelete = async (msgId) => {
+    try {
+      await fetch(`/api/messages/${msgId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      useStore.getState().deleteMessage(groupId, msgId)
+      setContextMenu(null)
+      toast.success('消息已删除')
+    } catch (e) {
+      toast.error('删除失败')
+    }
+  }
+
   const handleImageUpload = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -157,18 +174,22 @@ export default function GroupChatWindow() {
     const data = await res.json()
     useStore.getState().addMessage({ id: `img-${Date.now()}`, sender_id: user.id, group_id: groupId, content: data.url, type: 3, created_at: new Date().toISOString() })
     await fetch('/api/messages/send', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ group_id: groupId, content: data.url, type: 3 }) })
+    e.target.value = ''
+    setShowAttachMenu(false)
   }
 
   const handleVideoUpload = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
     await uploadAndSend(file, groupId, 4)
+    e.target.value = ''
   }
 
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
     await uploadAndSend(file, groupId, 5)
+    e.target.value = ''
   }
 
   const uploadAndSend = async (file, targetId, type) => {
@@ -216,6 +237,11 @@ export default function GroupChatWindow() {
     if (bytes < 1024) return bytes + ' B'
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+  }
+
+  const openFilePicker = (ref) => {
+    setShowAttachMenu(false)
+    setTimeout(() => ref.current?.click(), 50)
   }
 
   const handleAddMembers = async (selectedIds) => {
@@ -370,21 +396,18 @@ export default function GroupChatWindow() {
             <>
               <div className="fixed inset-0 z-30" onClick={() => setShowAttachMenu(false)} />
               <div className="absolute bottom-12 left-0 bg-white dark:bg-wechat-dark rounded-xl shadow-xl py-2 min-w-40 z-40">
-                <label className="flex items-center gap-3 px-4 py-2.5 hover:bg-wechat-bg dark:hover:bg-gray-800 transition cursor-pointer">
+                <button onClick={() => openFilePicker(videoInputRef)} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-wechat-bg dark:hover:bg-gray-800 transition">
                   <Video size={18} className="text-wechat-green" />
                   <span className="text-sm dark:text-wechat-darkText">视频</span>
-                  <input type="file" accept="video/*" className="hidden" onChange={handleVideoUpload} />
-                </label>
-                <label className="flex items-center gap-3 px-4 py-2.5 hover:bg-wechat-bg dark:hover:bg-gray-800 transition cursor-pointer">
+                </button>
+                <button onClick={() => openFilePicker(fileInputRef)} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-wechat-bg dark:hover:bg-gray-800 transition">
                   <FileText size={18} className="text-wechat-blue" />
                   <span className="text-sm dark:text-wechat-darkText">文件</span>
-                  <input type="file" className="hidden" onChange={handleFileUpload} />
-                </label>
-                <label className="flex items-center gap-3 px-4 py-2.5 hover:bg-wechat-bg dark:hover:bg-gray-800 transition cursor-pointer">
+                </button>
+                <button onClick={() => openFilePicker(imageInputRef)} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-wechat-bg dark:hover:bg-gray-800 transition">
                   <Image size={18} className="text-wechat-green" />
                   <span className="text-sm dark:text-wechat-darkText">图片</span>
-                  <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-                </label>
+                </button>
               </div>
             </>
           )}
@@ -406,6 +429,11 @@ export default function GroupChatWindow() {
           </div>
         </div>
       )}
+
+      {/* Hidden file inputs */}
+      <input ref={videoInputRef} type="file" accept="video/*" className="hidden" onChange={handleVideoUpload} />
+      <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} />
+      <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
 
       {/* Context Menu */}
       <AnimatePresence>

@@ -1,15 +1,18 @@
 import { useStore } from '../store'
 import { useState, useRef } from 'react'
-import { LogOut, ChevronRight, User, Settings, QrCode, Moon, Sun, Type, Image, X, Download, Scan } from 'lucide-react'
+import { LogOut, ChevronRight, User, Settings, QrCode, Moon, Sun, Type, Image, X, Download, Scan, Globe } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { QRCodeSVG } from 'qrcode.react'
 import QRScanner from './QRScanner'
+import { useTranslation } from '../hooks/useTranslation'
 
 export default function Profile() {
+  const { t, lang } = useTranslation()
   const user = useStore(s => s.user)
   const logout = useStore(s => s.logout)
   const isDark = useStore(s => s.isDark)
   const toggleDark = useStore(s => s.toggleDark)
+  const toggleLang = useStore(s => s.toggleLang)
   const fontSize = useStore(s => s.fontSize)
   const setFontSize = useStore(s => s.setFontSize)
   const updateProfile = useStore(s => s.updateProfile)
@@ -49,21 +52,22 @@ export default function Profile() {
   }
 
   const menuItems = [
-    { icon: User, label: '修改昵称', action: () => {
-      const newName = prompt('输入新昵称', user?.nickname)
+    { icon: User, label: t('modifyNickname'), action: () => {
+      const newName = prompt(t('newInput'), user?.nickname)
       if (newName) updateProfile({ nickname: newName })
     }},
-    { icon: Image, label: '更换头像', action: () => fileInput.current.click() },
-    { icon: isDark ? Sun : Moon, label: isDark ? '浅色模式' : '深色模式', action: toggleDark },
-    { icon: Type, label: '字体大小', desc: `${fontSize}px` },
-    { icon: QrCode, label: '我的二维码', action: () => setShowQR(true) },
-    { icon: Scan, label: '扫一扫', action: () => setShowScanner(true) },
+    { icon: Image, label: t('changeAvatar'), action: () => fileInput.current.click() },
+    { icon: isDark ? Sun : Moon, label: isDark ? t('lightMode') : t('darkMode'), action: toggleDark },
+    { icon: Type, label: t('fontSize'), desc: `${fontSize}px` },
+    { icon: Globe, label: t('language'), desc: lang === 'zh' ? '中文' : 'English', action: toggleLang },
+    { icon: QrCode, label: t('myQR'), action: () => setShowQR(true) },
+    { icon: Scan, label: t('scanQR'), action: () => setShowScanner(true) },
   ]
 
   const privacyItems = [
     { 
-      label: '加我为朋友时需要验证', 
-      desc: needVerification ? '开启' : '关闭',
+      label: t('needVerification'), 
+      desc: needVerification ? t('on') : t('off'),
       action: () => updateVerifySetting(!needVerification)
     },
   ]
@@ -81,11 +85,11 @@ export default function Profile() {
           <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
           
           <div className="flex-1" onClick={() => {
-            const newName = prompt('输入新昵称', user?.nickname)
+            const newName = prompt(t('newInput'), user?.nickname)
             if (newName) updateProfile({ nickname: newName })
           }}>
             <h2 className="text-xl font-bold text-wechat-dark dark:text-wechat-darkText">{user?.nickname}</h2>
-            <p className="text-sm text-wechat-gray mt-1">微信号: {user?.wxid}</p>
+            <p className="text-sm text-wechat-gray mt-1">{t('wxid')}: {user?.wxid}</p>
           </div>
           <ChevronRight className="text-wechat-gray" size={20} />
         </div>
@@ -106,10 +110,9 @@ export default function Profile() {
         ))}
       </div>
 
-      {/* Privacy Settings */}
       <div className="bg-white dark:bg-wechat-dark divide-y divide-wechat-border mt-2">
         <div className="px-4 py-2 text-sm text-wechat-gray bg-wechat-bg dark:bg-wechat-dark">
-          隐私设置
+          {t('privacy')}
         </div>
         {privacyItems.map((item, i) => (
           <div key={i} onClick={item.action} className="flex items-center justify-between p-4 active:bg-wechat-bg dark:active:bg-gray-800 transition cursor-pointer">
@@ -122,10 +125,9 @@ export default function Profile() {
         ))}
       </div>
 
-      {/* Font Size Slider */}
       <div className="bg-white dark:bg-wechat-dark mt-2 p-4">
         <div className="flex justify-between items-center mb-2">
-          <span className="text-sm dark:text-wechat-darkText">字体大小: {fontSize}px</span>
+          <span className="text-sm dark:text-wechat-darkText">{t('fontSize')}: {fontSize}px</span>
           <span className="text-sm dark:text-wechat-darkText">A</span>
         </div>
         <input type="range" min="12" max="24" value={fontSize} onChange={e => setFontSize(parseInt(e.target.value))} className="w-full h-2 bg-wechat-bg rounded-lg appearance-none cursor-pointer" />
@@ -133,12 +135,10 @@ export default function Profile() {
 
       <div className="p-4 mt-4">
         <button onClick={logout} className="w-full py-3 bg-white dark:bg-wechat-dark text-red-500 rounded-lg font-medium hover:bg-red-50 dark:hover:bg-gray-800 transition">
-          <LogOut size={20} className="inline mr-2" /> 退出登录
+          <LogOut size={20} className="inline mr-2" /> {t('logout')}
         </button>
-
       </div>
 
-      {/* QR Code Modal */}
       <AnimatePresence>
         {showQR && (
           <motion.div
@@ -156,7 +156,7 @@ export default function Profile() {
               onClick={e => e.stopPropagation()}
             >
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-bold dark:text-white">我的二维码</h3>
+                <h3 className="text-lg font-bold dark:text-white">{t('myQR')}</h3>
                 <button onClick={() => setShowQR(false)} className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
                   <X size={20} className="text-wechat-gray" />
                 </button>
@@ -172,21 +172,20 @@ export default function Profile() {
                 />
               </div>
 
-              <p className="text-wechat-gray text-sm mb-2">微信号: {user?.wxid}</p>
-              <p className="text-wechat-gray text-xs mb-4">扫描二维码添加我为好友</p>
+              <p className="text-wechat-gray text-sm mb-2">{t('wxid')}: {user?.wxid}</p>
+              <p className="text-wechat-gray text-xs mb-4">{t('scanToAdd')}</p>
 
               <button
                 onClick={handleDownloadQR}
                 className="flex items-center justify-center gap-2 mx-auto px-6 py-2.5 bg-wechat-green text-white rounded-full text-sm font-medium hover:opacity-90 transition"
               >
-                <Download size={16} /> 保存到手机
+                <Download size={16} /> {t('saveToPhone')}
               </button>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* QR Scanner Modal */}
       <AnimatePresence>
         {showScanner && (
           <QRScanner onClose={() => setShowScanner(false)} />

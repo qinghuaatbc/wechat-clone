@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, Fragment } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Send, Image, Loader2, ChevronUp, Check, CheckCheck, Copy, CornerDownRight, RotateCcw, Smile, Video, FileText, Play, Download, File, X } from 'lucide-react'
+import { ArrowLeft, Send, Image, Loader2, ChevronUp, Check, CheckCheck, Copy, CornerDownRight, RotateCcw, Smile, Video, FileText, Play, Download, File, X, Trash2 } from 'lucide-react'
 import { useStore } from '../store'
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -113,6 +113,9 @@ export default function ChatWindow() {
   const [showAttachMenu, setShowAttachMenu] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(null)
+  const videoInputRef = useRef(null)
+  const fileInputRef = useRef(null)
+  const imageInputRef = useRef(null)
 
   const friend = isFileHelper ? { nickname: '文件传输助手' } : (friends.find(f => f.id === id) || { nickname: '未知用户' })
 
@@ -176,6 +179,20 @@ export default function ChatWindow() {
     toast.info('消息已撤回')
   }
 
+  const handleDelete = async (msgId) => {
+    try {
+      await fetch(`/api/messages/${msgId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      useStore.getState().deleteMessage(convId, msgId)
+      setContextMenu(null)
+      toast.success('消息已删除')
+    } catch (e) {
+      toast.error('删除失败')
+    }
+  }
+
   const handleImageUpload = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -186,18 +203,22 @@ export default function ChatWindow() {
     const data = await res.json()
     useStore.getState().addMessage({ id: `img-${Date.now()}`, sender_id: user.id, receiver_id: isFileHelper ? user.id : id, content: data.url, type: 3, created_at: new Date().toISOString() })
     await fetch('/api/messages/send', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ receiver_id: isFileHelper ? user.id : id, content: data.url, type: 3 }) })
+    e.target.value = ''
+    setShowAttachMenu(false)
   }
 
   const handleVideoUpload = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
     await uploadAndSend(file, isFileHelper ? user.id : id, 4)
+    e.target.value = ''
   }
 
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
     await uploadAndSend(file, isFileHelper ? user.id : id, 5)
+    e.target.value = ''
   }
 
   const uploadAndSend = async (file, receiverId, type) => {
@@ -240,6 +261,11 @@ export default function ChatWindow() {
       setUploading(false)
       setUploadProgress(null)
     }
+  }
+
+  const openFilePicker = (ref) => {
+    setShowAttachMenu(false)
+    setTimeout(() => ref.current?.click(), 50)
   }
 
   const formatFileSize = (bytes) => {
@@ -386,21 +412,18 @@ export default function ChatWindow() {
               <>
                 <div className="fixed inset-0 z-30" onClick={() => setShowAttachMenu(false)} />
                 <div className="absolute bottom-12 left-0 bg-white dark:bg-wechat-dark rounded-xl shadow-xl py-2 min-w-40 z-40">
-                  <label className="flex items-center gap-3 px-4 py-2.5 hover:bg-wechat-bg dark:hover:bg-gray-800 transition cursor-pointer">
+                  <button onClick={() => openFilePicker(videoInputRef)} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-wechat-bg dark:hover:bg-gray-800 transition">
                     <Video size={18} className="text-wechat-green" />
                     <span className="text-sm dark:text-wechat-darkText">视频</span>
-                    <input type="file" accept="video/*" className="hidden" onChange={handleVideoUpload} />
-                  </label>
-                  <label className="flex items-center gap-3 px-4 py-2.5 hover:bg-wechat-bg dark:hover:bg-gray-800 transition cursor-pointer">
+                  </button>
+                  <button onClick={() => openFilePicker(fileInputRef)} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-wechat-bg dark:hover:bg-gray-800 transition">
                     <FileText size={18} className="text-wechat-blue" />
                     <span className="text-sm dark:text-wechat-darkText">文件</span>
-                    <input type="file" className="hidden" onChange={handleFileUpload} />
-                  </label>
-                  <label className="flex items-center gap-3 px-4 py-2.5 hover:bg-wechat-bg dark:hover:bg-gray-800 transition cursor-pointer">
+                  </button>
+                  <button onClick={() => openFilePicker(imageInputRef)} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-wechat-bg dark:hover:bg-gray-800 transition">
                     <Image size={18} className="text-wechat-green" />
                     <span className="text-sm dark:text-wechat-darkText">图片</span>
-                    <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-                  </label>
+                  </button>
                 </div>
               </>
             )}
@@ -429,15 +452,23 @@ export default function ChatWindow() {
             <>
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-40" onClick={() => setContextMenu(null)} />
               <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="fixed z-50 bg-white rounded-xl shadow-xl py-2 w-40" style={{ left: contextMenu.x - 160, top: contextMenu.y - 40 }}>
-                <button onClick={() => handleCopy(contextMenu.msg.content)} className="w-full px-4 py-2.5 text-left text-sm hover:bg-wechat-bg flex items-center gap-2"><Copy size={16} /> 复制</button>
+                {contextMenu.msg.type === 1 && (
+                  <button onClick={() => handleCopy(contextMenu.msg.content)} className="w-full px-4 py-2.5 text-left text-sm hover:bg-wechat-bg flex items-center gap-2"><Copy size={16} /> 复制</button>
+                )}
                 <button onClick={() => { setQuote(contextMenu.msg.content); setContextMenu(null) }} className="w-full px-4 py-2.5 text-left text-sm hover:bg-wechat-bg flex items-center gap-2"><CornerDownRight size={16} /> 引用</button>
                 {contextMenu.msg.sender_id === user.id && !contextMenu.msg.is_recalled && (
                   <button onClick={() => handleRecall(contextMenu.msg.id)} className="w-full px-4 py-2.5 text-left text-sm hover:bg-wechat-bg flex items-center gap-2"><RotateCcw size={16} /> 撤回</button>
                 )}
+                <button onClick={() => handleDelete(contextMenu.msg.id)} className="w-full px-4 py-2.5 text-left text-sm hover:bg-wechat-bg text-red-500 flex items-center gap-2"><Trash2 size={16} /> 删除</button>
               </motion.div>
             </>
           )}
         </AnimatePresence>
+
+        {/* Hidden file inputs */}
+        <input ref={videoInputRef} type="file" accept="video/*" className="hidden" onChange={handleVideoUpload} />
+        <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} />
+        <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
 
         {/* Image Preview */}
         <AnimatePresence>

@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { useStore } from '../store'
 import { PullToRefresh } from './PullToRefresh'
 import FileHelperEntry from './FileHelperEntry'
+import { useTranslation } from '../hooks/useTranslation'
 
 const Skeleton = () => (
   <div className="flex items-center p-4 animate-pulse">
@@ -14,6 +15,7 @@ const Skeleton = () => (
 )
 
 export default function ChatList() {
+  const { t } = useTranslation()
   const friends = useStore(s => s.friends)
   const unread = useStore(s => s.unread)
   const fetchFriends = useStore(s => s.fetchFriends)
@@ -31,8 +33,8 @@ export default function ChatList() {
           </>
         ) : friends.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-wechat-gray animate-fade-in">
-            <p className="text-lg mb-2">暂无聊天</p>
-            <p className="text-sm">添加好友开始聊天吧</p>
+            <p className="text-lg mb-2">{t('noChats')}</p>
+            <p className="text-sm">{t('addFriendStart')}</p>
           </div>
         ) : (
           friends.map(f => (
@@ -48,7 +50,7 @@ export default function ChatList() {
                   </span>
                 </div>
                 <p className="text-sm text-wechat-gray mt-0.5 truncate">
-                  {f.remark || '点击开始聊天'}
+                  {f.remark || t('startChat')}
                 </p>
               </div>
               
