@@ -249,8 +249,8 @@ func (h *FriendHandler) SearchUser(c *gin.Context) {
 
 	var pendingRequests []models.FriendRequest
 	h.DB.Where("(from_id = ? OR to_id = ?) AND status = ?", userID, userID, models.RequestPending).Find(&pendingRequests)
-	requestMap := make(map[uuid]int)
-	requestIDMap := make(map[uuid]uint)
+	requestMap := make(map[uuid.UUID]int)
+	requestIDMap := make(map[uuid.UUID]uint)
 	for _, r := range pendingRequests {
 		if r.FromID == userID {
 			requestMap[r.ToID] = r.Status
