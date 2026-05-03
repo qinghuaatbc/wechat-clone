@@ -8,7 +8,7 @@ const api = (token) => async (url, opts = {}) => {
   const headers = {}
   if (!(opts.body instanceof FormData)) headers['Content-Type'] = 'application/json'
   headers['Authorization'] = `Bearer ${token}`
-  const res = await fetch(url, { ...opts, headers })
+  const res = await window.fetch(url, { ...opts, headers })
   if (res.status === 204) return null
   const data = await res.json().catch(() => null)
   if (!res.ok) throw new Error(data?.error || `请求失败 (${res.status})`)
@@ -18,7 +18,7 @@ const api = (token) => async (url, opts = {}) => {
 export default function CloudDisk() {
   const navigate = useNavigate()
   const token = useStore(s => s.token)
-  const fetch = useCallback(api(token), [token])
+  const request = useCallback((url, opts) => api(token)(url, opts), [token])
 
   const [files, setFiles] = useState([])
   const [shared, setShared] = useState([])
@@ -34,23 +34,23 @@ export default function CloudDisk() {
   const loadFiles = useCallback(async () => {
     try {
       const params = currentDir ? `?parent_id=${currentDir}` : ''
-      const data = await fetch(`/api/cloud/list${params}`)
+      const data = await request(`/api/cloud/list${params}`)
       setFiles(data.files || [])
     } catch (e) { toast.error(e.message) }
-  }, [currentDir, fetch])
+  }, [currentDir, request])
 
   useEffect(() => { if (tab === 'my') loadFiles() }, [loadFiles, tab])
   useEffect(() => {
     if (tab !== 'shared') return
-    fetch('/api/cloud/shared').then(d => setShared(d.files || [])).catch(e => toast.error(e.message))
-  }, [tab, fetch])
+    request('/api/cloud/shared').then(d => setShared(d.files || [])).catch(e => toast.error(e.message))
+  }, [tab, request])
 
   const createFolder = async () => {
     if (!newFolderName.trim()) { toast.error('请输入目录名称'); return }
     try {
       const body = { name: newFolderName.trim() }
       if (currentDir) body.parent_id = currentDir
-      await fetch('/api/cloud/mkdir', { method: 'POST', body: JSON.stringify(body) })
+      await request('/api/cloud/mkdir', { method: 'POST', body: JSON.stringify(body) })
       setShowNewFolder(false)
       setNewFolderName('')
       toast.success('目录已创建')
@@ -66,7 +66,7 @@ export default function CloudDisk() {
       const fd = new FormData()
       fd.append('file', file)
       if (currentDir) fd.append('parent_id', currentDir)
-      await fetch('/api/cloud/upload', { method: 'POST', body: fd })
+      await request('/api/cloud/upload', { method: 'POST', body: fd })
       toast.success(`"${file.name}" 上传成功`)
       loadFiles()
     } catch (e) { toast.error(e.message) }
@@ -77,7 +77,7 @@ export default function CloudDisk() {
   const deleteFile = async (id) => {
     if (!confirm('确定删除?')) return
     try {
-      await fetch(`/api/cloud/${id}`, { method: 'DELETE' })
+      await request(`/api/cloud/${id}`, { method: 'DELETE' })
       toast.success('已删除')
       loadFiles()
     } catch (e) { toast.error(e.message) }
@@ -85,7 +85,7 @@ export default function CloudDisk() {
 
   const shareFile = async (fileId, permission) => {
     try {
-      await fetch('/api/cloud/share', { method: 'POST', body: JSON.stringify({ file_id: fileId, permission }) })
+      await request('/api/cloud/share', { method: 'POST', body: JSON.stringify({ file_id: fileId, permission }) })
       setShowShare(null)
       toast.success('分享已更新')
       loadFiles()
