@@ -502,10 +502,10 @@ export default function ChatWindow() {
         </AnimatePresence>
 
         {/* Hidden file inputs */}
-        <input ref={videoInputRef} type="file" accept="video/*" className="absolute -top-full -left-full opacity-0 pointer-events-none" onChange={handleVideoUpload} />
-        <input ref={fileInputRef} type="file" className="absolute -top-full -left-full opacity-0 pointer-events-none" onChange={handleFileUpload} />
-        <input ref={model3dRef} type="file" accept=".glb,.gltf,.obj,.stl,.fbx" className="absolute -top-full -left-full opacity-0 pointer-events-none" onChange={handle3DModelUpload} />
-        <input ref={imageInputRef} type="file" accept="image/*" className="absolute -top-full -left-full opacity-0 pointer-events-none" onChange={handleImageUpload} />
+        <input ref={videoInputRef} type="file" accept="video/*" className="absolute top-[-9999px] left-[-9999px] opacity-0 pointer-events-none" onChange={handleVideoUpload} />
+        <input ref={fileInputRef} type="file" className="absolute top-[-9999px] left-[-9999px] opacity-0 pointer-events-none" onChange={handleFileUpload} />
+        <input ref={model3dRef} type="file" accept=".glb,.gltf,.obj,.stl,.fbx" className="absolute top-[-9999px] left-[-9999px] opacity-0 pointer-events-none" onChange={handle3DModelUpload} />
+        <input ref={imageInputRef} type="file" accept="image/*" className="absolute top-[-9999px] left-[-9999px] opacity-0 pointer-events-none" onChange={handleImageUpload} />
 
         {/* Image/3D Preview */}
         <AnimatePresence>
