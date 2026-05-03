@@ -368,13 +368,15 @@ export default function ChatWindow() {
                   camera-controls 
                   auto-rotate 
                   style={{ width: '200px', height: '200px', background: '#1a1a2e' }}
-                  className="rounded-lg pointer-events-none"
+                  className="rounded-lg"
                 ></model-viewer>
                 <a href={msg.content} download={msg.file_name} className="absolute top-2 right-2 p-1.5 bg-black/60 text-white rounded-full hover:bg-black/80 transition" title="下载" onClick={e => e.stopPropagation()}>
                   <Download size={16} />
                 </a>
               </div>
-            ) : null
+            ) : (
+              <span className="whitespace-pre-wrap break-words">{msg.content}</span>
+            )
           }
                 </div>
               </div>
@@ -516,6 +518,7 @@ export default function ChatWindow() {
         <AnimatePresence>
           {useStore.getState().previewImage && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center" onClick={() => setPreviewImage(null)}>
+              <button onClick={() => setPreviewImage(null)} className="absolute top-4 right-4 z-10 w-10 h-10 bg-black/60 text-white rounded-full flex items-center justify-center text-xl hover:bg-black/80 transition">✕</button>
               {useStore.getState().previewImage.endsWith('.glb') || useStore.getState().previewImage.endsWith('.gltf') ? (
                 <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} exit={{ scale: 0.8 }} onClick={e => e.stopPropagation()}>
                   <model-viewer 
