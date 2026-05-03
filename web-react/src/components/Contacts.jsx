@@ -212,8 +212,8 @@ export default function Contacts() {
             <div key={u.id} className="flex items-center p-4 justify-between">
               <div className="flex items-center gap-3">
                 {activeTab === 'groups' ? (
-                  <div className="w-10 h-10 rounded-lg bg-gray-500 flex items-center justify-center text-white font-bold flex-shrink-0">
-                    <MessageSquare size={20} />
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                    {(u.name || '群')[0]}
                   </div>
                 ) : (
                   <div className="w-10 h-10 rounded-lg bg-wechat-green/20 flex items-center justify-center text-wechat-green font-bold flex-shrink-0 overflow-hidden">
@@ -327,8 +327,8 @@ export default function Contacts() {
           {groups.length > 0 ? (
             groups.map(g => (
               <div key={g.id} onClick={() => handleGroupClick(g)} className="flex items-center p-4 bg-white border-b border-wechat-border active:bg-wechat-bg transition cursor-pointer">
-                <div className="w-10 h-10 rounded-lg bg-gray-500 flex items-center justify-center text-white flex-shrink-0">
-                  <MessageSquare size={20} />
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                  {(g.name || '群')[0]}
                 </div>
                 <div className="ml-3 flex-1">
                   <p className="font-medium text-wechat-dark">{g.name}</p>
