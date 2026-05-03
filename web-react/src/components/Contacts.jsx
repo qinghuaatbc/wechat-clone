@@ -431,9 +431,9 @@ export default function Contacts() {
                 className="w-full p-3 bg-wechat-bg rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wechat-green/50 mb-4"
               />
 
-              <p className="text-sm text-wechat-gray mb-2">选择成员（{selectedMembers.length}人）</p>
+              <p className="text-sm text-wechat-gray mb-2">选择好友（{selectedMembers.length}人）</p>
               <div className="space-y-2 mb-4">
-                {allUsers.filter(u => !u.is_friend).map(u => (
+                {friends.filter(f => f.id !== currentUser?.id).map(u => (
                   <div 
                     key={u.id} 
                     onClick={() => toggleMember(u.id)}
