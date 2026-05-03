@@ -1,13 +1,15 @@
 import { useStore } from '../store'
 import { useState, useEffect } from 'react'
-import { Search, UserPlus, Bell, Check, X, Clock, UserCheck } from 'lucide-react'
+import { Search, UserPlus, Bell, Check, X, Clock, UserCheck, MessageSquare, Users } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function Contacts() {
   const friends = useStore(s => s.friends)
+  const groups = useStore(s => s.groups)
   const searchUser = useStore(s => s.searchUser)
   const addFriend = useStore(s => s.addFriend)
   const fetchFriends = useStore(s => s.fetchFriends)
+  const fetchGroups = useStore(s => s.fetchGroups)
   const incomingRequests = useStore(s => s.incomingRequests)
   const pendingRequestCount = useStore(s => s.pendingRequestCount)
   const acceptRequest = useStore(s => s.acceptRequest)
@@ -17,6 +19,7 @@ export default function Contacts() {
   const fetchRecommend = useStore(s => s.fetchRecommend)
   const currentUser = useStore(s => s.user)
 
+  const [activeTab, setActiveTab] = useState('friends')
   const [keyword, setKeyword] = useState('')
   const [searchResults, setSearchResults] = useState([])
   const [showRequests, setShowRequests] = useState(false)
@@ -24,6 +27,8 @@ export default function Contacts() {
   const [addMessage, setAddMessage] = useState('')
 
   useEffect(() => {
+    fetchFriends()
+    fetchGroups()
     fetchFriendRequests()
     fetchRecommend()
   }, [])
@@ -63,7 +68,7 @@ export default function Contacts() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-wechat-gray" size={18} />
             <input
               type="text"
-              placeholder="搜索微信号/昵称/手机号"
+              placeholder={activeTab === 'friends' ? "搜索好友" : "搜索群聊"}
               value={keyword}
               onChange={e => setKeyword(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
@@ -78,7 +83,7 @@ export default function Contacts() {
           </button>
         </div>
 
-        {pendingRequestCount > 0 && (
+        {activeTab === 'friends' && pendingRequestCount > 0 && (
           <button 
             onClick={() => setShowRequests(!showRequests)}
             className="mt-2 w-full flex items-center justify-between p-3 bg-white rounded-lg active:bg-wechat-bg transition"
@@ -95,6 +100,22 @@ export default function Contacts() {
             <span className="text-xs text-wechat-gray">点击查看</span>
           </button>
         )}
+      </div>
+
+      {/* Tab切换 */}
+      <div className="flex bg-white border-b border-wechat-border">
+        <button
+          onClick={() => setActiveTab('friends')}
+          className={`flex-1 py-3 text-sm font-medium transition-colors ${activeTab === 'friends' ? 'text-wechat-green border-b-2 border-wechat-green' : 'text-wechat-gray'}`}
+        >
+          <Users size={16} className="inline mr-1" />好友
+        </button>
+        <button
+          onClick={() => setActiveTab('groups')}
+          className={`flex-1 py-3 text-sm font-medium transition-colors ${activeTab === 'groups' ? 'text-wechat-green border-b-2 border-wechat-green' : 'text-wechat-gray'}`}
+        >
+          <MessageSquare size={16} className="inline mr-1" />群聊
+        </button>
       </div>
 
       <AnimatePresence>
@@ -165,12 +186,12 @@ export default function Contacts() {
 
       {keyword && searchResults.length === 0 && (
         <div className="flex flex-col items-center justify-center py-12 text-wechat-gray">
-          <p className="text-lg">未找到用户</p>
-          <p className="text-sm">请检查微信号、昵称或手机号是否正确</p>
+          <p className="text-lg">未找到{activeTab === 'friends' ? '用户' : '群聊'}</p>
+          <p className="text-sm">请检查{activeTab === 'friends' ? '微信号、昵称或手机号' : '群名称'}是否正确</p>
         </div>
       )}
 
-      {recommendUsers.length > 0 && !keyword && (
+      {recommendUsers.length > 0 && !keyword && activeTab === 'friends' && (
         <div className="mt-2">
           <div className="px-4 py-2 text-sm text-wechat-gray bg-wechat-bg">
             可能认识的人
@@ -199,38 +220,70 @@ export default function Contacts() {
         </div>
       )}
 
-      <div className="mt-2">
-        <div className="px-4 py-2 text-sm text-wechat-gray bg-wechat-bg">
-          我的好友
-        </div>
-        {sortedLetters.map(letter => (
-          <div key={letter}>
-            <div className="px-4 py-2 text-sm text-wechat-gray bg-wechat-bg sticky top-[73px] z-10">
-              {letter}
-            </div>
-            <div className="bg-white divide-y divide-wechat-border">
-              {groupedFriends[letter].map(f => (
-                <div key={f.id} className="flex items-center p-4 active:bg-wechat-bg transition">
-                  <div className="w-10 h-10 rounded-lg bg-wechat-green/20 flex items-center justify-center text-wechat-green font-bold flex-shrink-0 overflow-hidden">
-                    {f.avatar ? <img src={f.avatar} className="w-full h-full object-cover" /> : (f.nickname?.[0] || '?')}
-                  </div>
-                  <div className="ml-3">
-                    <p className="font-medium text-wechat-dark">{f.nickname}</p>
-                    {f.online && <span className="text-xs text-wechat-green">在线</span>}
-                  </div>
-                </div>
-              ))}
-            </div>
+      {/* 好友列表 */}
+      {activeTab === 'friends' && !keyword && (
+        <div className="mt-2">
+          <div className="px-4 py-2 text-sm text-wechat-gray bg-wechat-bg">
+            我的好友
           </div>
-        ))}
+          {sortedLetters.map(letter => (
+            <div key={letter}>
+              <div className="px-4 py-2 text-sm text-wechat-gray bg-wechat-bg sticky top-[73px] z-10">
+                {letter}
+              </div>
+              <div className="bg-white divide-y divide-wechat-border">
+                {groupedFriends[letter].map(f => (
+                  <div key={f.id} className="flex items-center p-4 active:bg-wechat-bg transition">
+                    <div className="w-10 h-10 rounded-lg bg-wechat-green/20 flex items-center justify-center text-wechat-green font-bold flex-shrink-0 overflow-hidden">
+                      {f.avatar ? <img src={f.avatar} className="w-full h-full object-cover" /> : (f.nickname?.[0] || '?')}
+                    </div>
+                    <div className="ml-3">
+                      <p className="font-medium text-wechat-dark">{f.nickname}</p>
+                      {f.online && <span className="text-xs text-wechat-green">在线</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
 
-        {friends.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20 text-wechat-gray">
-            <p className="text-lg mb-2">暂无好友</p>
-            <p className="text-sm">搜索上方添加好友</p>
+          {friends.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-20 text-wechat-gray">
+              <p className="text-lg mb-2">暂无好友</p>
+              <p className="text-sm">搜索上方添加好友</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 群聊列表 */}
+      {activeTab === 'groups' && !keyword && (
+        <div className="mt-2">
+          <div className="px-4 py-2 text-sm text-wechat-gray bg-wechat-bg">
+            我的群聊
           </div>
-        )}
-      </div>
+          {groups.length > 0 ? (
+            groups.map(g => (
+              <div key={g.id} className="flex items-center p-4 bg-white border-b border-wechat-border active:bg-wechat-bg transition">
+                <div className="w-10 h-10 rounded-lg bg-gray-500 flex items-center justify-center text-white flex-shrink-0">
+                  <MessageSquare size={20} />
+                </div>
+                <div className="ml-3 flex-1">
+                  <p className="font-medium text-wechat-dark">{g.name}</p>
+                  <p className="text-xs text-wechat-gray">
+                    {g.owner_id === currentUser?.id ? '群主' : '成员'}
+                  </p>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20 text-wechat-gray">
+              <p className="text-lg mb-2">暂无群聊</p>
+              <p className="text-sm">通过聊天界面创建或加入群聊</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Add Friend Modal */}
       <AnimatePresence>

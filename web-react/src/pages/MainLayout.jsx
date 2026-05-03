@@ -46,7 +46,7 @@ export default function MainLayout() {
         <h1 className="text-lg font-semibold text-center flex-1">
           {tabs.find(t => t.id === activeTab)?.label}
         </h1>
-        {(activeTab === 'chat' || activeTab === 'contacts') && (
+        {activeTab === 'chat' && (
           <div className="relative">
             <button className="text-wechat-dark font-bold text-xl" onClick={() => setShowPlusMenu(!showPlusMenu)}>+</button>
             {showPlusMenu && (
