@@ -31,70 +31,83 @@ export default function CloudDisk() {
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef(null)
 
-  const api = (url, opts = {}) => fetch(url, { ...opts, headers: { ...opts.headers, Authorization: `Bearer ${token}` } }).then(r => r.json())
+  const api = async (url, opts = {}) => {
+    const headers = { ...opts.headers, Authorization: `Bearer ${token}` }
+    if (opts.body && typeof opts.body === 'string') headers['Content-Type'] = 'application/json'
+    const res = await fetch(url, { ...opts, headers })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || `请求失败 (${res.status})`)
+    return data
+  }
 
   const loadFiles = async () => {
-    const params = currentDir ? `?parent_id=${currentDir}` : ''
-    const data = await api(`/api/cloud/list${params}`)
-    setFiles(data.files || [])
+    try {
+      const params = currentDir ? `?parent_id=${currentDir}` : ''
+      const data = await api(`/api/cloud/list${params}`)
+      setFiles(data.files || [])
+    } catch (e) { toast.error('加载文件失败: ' + e.message) }
   }
 
   const loadShared = async () => {
-    const data = await api('/api/cloud/shared')
-    setShared(data.files || [])
+    try {
+      const data = await api('/api/cloud/shared')
+      setShared(data.files || [])
+    } catch (e) { toast.error('加载共享失败: ' + e.message) }
   }
 
-  useEffect(() => { loadFiles() }, [currentDir])
+  useEffect(() => { if (tab === 'my') loadFiles() }, [currentDir, tab])
   useEffect(() => { if (tab === 'shared') loadShared() }, [tab])
 
   const createFolder = async () => {
     if (!newFolderName.trim()) return
-    const body = { name: newFolderName }
-    if (currentDir) body.parent_id = currentDir
-    await api('/api/cloud/mkdir', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-    setShowNewFolder(false)
-    setNewFolderName('')
-    loadFiles()
+    try {
+      const body = { name: newFolderName }
+      if (currentDir) body.parent_id = currentDir
+      await api('/api/cloud/mkdir', { method: 'POST', body: JSON.stringify(body) })
+      setShowNewFolder(false)
+      setNewFolderName('')
+      toast.success('目录已创建')
+      loadFiles()
+    } catch (e) { toast.error('创建目录失败: ' + e.message) }
   }
 
   const uploadFile = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
     setUploading(true)
-    const fd = new FormData()
-    fd.append('file', file)
-    if (currentDir) fd.append('parent_id', currentDir)
-    await api('/api/cloud/upload', { method: 'POST', body: fd })
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      if (currentDir) fd.append('parent_id', currentDir)
+      await api('/api/cloud/upload', { method: 'POST', body: fd })
+      toast.success('上传成功')
+      loadFiles()
+    } catch (e) { toast.error('上传失败: ' + e.message) }
     setUploading(false)
-    loadFiles()
-    toast.success('上传成功')
     e.target.value = ''
   }
 
   const deleteFile = async (id) => {
     if (!confirm('确定删除?')) return
-    await api(`/api/cloud/${id}`, { method: 'DELETE' })
-    loadFiles()
-    toast.success('已删除')
+    try {
+      await api(`/api/cloud/${id}`, { method: 'DELETE' })
+      toast.success('已删除')
+      loadFiles()
+    } catch (e) { toast.error('删除失败: ' + e.message) }
   }
 
   const shareFile = async (fileId, permission) => {
-    await api('/api/cloud/share', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ file_id: fileId, permission }) })
-    setShowShare(null)
-    loadFiles()
-    toast.success(PERM_NAMES[permission] + '分享已更新')
+    try {
+      await api('/api/cloud/share', { method: 'POST', body: JSON.stringify({ file_id: fileId, permission }) })
+      setShowShare(null)
+      toast.success(PERM_NAMES[permission] + '已更新')
+      loadFiles()
+    } catch (e) { toast.error('分享失败: ' + e.message) }
   }
 
   const enterDir = (dir) => {
     setCurrentDir(dir.id)
     setPath(prev => [...prev, { id: dir.id, name: dir.name }])
-  }
-
-  const goUp = () => {
-    if (path.length === 0) { setCurrentDir(null); return }
-    const newPath = path.slice(0, -1)
-    setPath(newPath)
-    setCurrentDir(newPath.length > 0 ? newPath[newPath.length - 1].id : null)
   }
 
   const getIcon = (f) => {
@@ -109,7 +122,15 @@ export default function CloudDisk() {
     return (bytes / (1024 * 1024)).toFixed(1) + 'MB'
   }
 
-  const PermIcon = showShare ? PERM_ICONS[showShare.permission] || Lock : null
+  const handleDownload = (f) => {
+    if (f.is_dir) return
+    const a = document.createElement('a')
+    a.href = f.path
+    a.download = f.name
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+  }
 
   return (
     <div className="flex flex-col h-screen max-w-md mx-auto bg-gray-50">
@@ -122,13 +143,11 @@ export default function CloudDisk() {
         <input ref={fileInputRef} type="file" className="hidden" onChange={uploadFile} />
       </header>
 
-      {/* Tabs */}
       <div className="flex bg-white border-b">
         <button onClick={() => setTab('my')} className={`flex-1 py-2.5 text-sm font-medium ${tab === 'my' ? 'text-wechat-green border-b-2 border-wechat-green' : 'text-gray-500'}`}>我的文件</button>
         <button onClick={() => setTab('shared')} className={`flex-1 py-2.5 text-sm font-medium ${tab === 'shared' ? 'text-wechat-green border-b-2 border-wechat-green' : 'text-gray-500'}`}>共享给我</button>
       </div>
 
-      {/* Breadcrumb */}
       {tab === 'my' && (
         <div className="flex items-center gap-1 px-4 py-2 bg-white border-b text-sm overflow-x-auto">
           <button onClick={() => { setCurrentDir(null); setPath([]) }} className="text-wechat-green whitespace-nowrap">全部</button>
@@ -141,11 +160,9 @@ export default function CloudDisk() {
         </div>
       )}
 
-      {/* Uploading indicator */}
       {uploading && <div className="px-4 py-2 bg-wechat-green/10 text-sm text-wechat-green text-center">上传中...</div>}
 
       <div className="flex-1 overflow-y-auto pb-4">
-        {/* Actions */}
         {tab === 'my' && (
           <div className="flex gap-2 p-3 bg-white border-b">
             <button onClick={() => setShowNewFolder(true)} className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 rounded-lg text-sm">
@@ -154,7 +171,6 @@ export default function CloudDisk() {
           </div>
         )}
 
-        {/* Files */}
         {tab === 'my' ? (
           files.length === 0 ? (
             <div className="flex flex-col items-center py-20 text-gray-400">
@@ -166,18 +182,18 @@ export default function CloudDisk() {
               const Icon = getIcon(f)
               return (
                 <div key={f.id} className="flex items-center px-4 py-3 bg-white border-b active:bg-gray-50 transition">
-                  <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0" onClick={() => f.is_dir && enterDir(f)}>
+                  <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0 cursor-pointer" onClick={() => f.is_dir && enterDir(f)}>
                     <Icon.icon size={22} className={Icon.color} />
                   </div>
-                  <div className="ml-3 flex-1 min-w-0" onClick={() => f.is_dir && enterDir(f)}>
+                  <div className="ml-3 flex-1 min-w-0 cursor-pointer" onClick={() => f.is_dir && enterDir(f)}>
                     <p className="text-sm font-medium truncate">{f.name}</p>
                     <p className="text-xs text-gray-400">{f.is_dir ? '' : formatSize(f.size)}</p>
                   </div>
                   <div className="flex items-center gap-1">
                     {!f.is_dir && (
-                      <a href={f.path} download className="p-1.5 hover:bg-gray-100 rounded" title="下载">
+                      <button onClick={() => handleDownload(f)} className="p-1.5 hover:bg-gray-100 rounded" title="下载">
                         <Download size={16} className="text-gray-500" />
-                      </a>
+                      </button>
                     )}
                     <button onClick={() => setShowShare(f)} className="p-1.5 hover:bg-gray-100 rounded" title="分享">
                       <Share2 size={16} className="text-gray-500" />
@@ -207,9 +223,9 @@ export default function CloudDisk() {
                   <p className="text-xs text-gray-400">{f.owner_name} · {formatSize(f.size)}</p>
                 </div>
                 {!f.is_dir && (
-                  <a href={f.path} download className="p-1.5 hover:bg-gray-100 rounded">
+                  <button onClick={() => handleDownload(f)} className="p-1.5 hover:bg-gray-100 rounded">
                     <Download size={16} className="text-gray-500" />
-                  </a>
+                  </button>
                 )}
               </div>
             ))
@@ -217,7 +233,6 @@ export default function CloudDisk() {
         )}
       </div>
 
-      {/* New Folder Modal */}
       {showNewFolder && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-6" onClick={() => setShowNewFolder(false)}>
           <div className="bg-white rounded-xl p-6 w-full max-w-sm" onClick={e => e.stopPropagation()}>
@@ -231,7 +246,6 @@ export default function CloudDisk() {
         </div>
       )}
 
-      {/* Share Modal */}
       {showShare && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-6" onClick={() => setShowShare(null)}>
           <div className="bg-white rounded-xl p-6 w-full max-w-sm" onClick={e => e.stopPropagation()}>

@@ -101,6 +101,7 @@ export default function ChatWindow() {
   const messages = useMemo(() => [...rawMessages].sort((a, b) => new Date(a.created_at) - new Date(b.created_at)), [rawMessages])
   const loadMessages = useStore(s => s.loadMessages)
   const clearUnread = useStore(s => s.clearUnread)
+  const previewImage = useStore(s => s.previewImage)
   const setPreviewImage = useStore(s => s.setPreviewImage)
   const loading = useStore(s => s.loading)
   const token = useStore(s => s.token)
@@ -516,13 +517,13 @@ export default function ChatWindow() {
 
         {/* Image/3D Preview */}
         <AnimatePresence>
-          {useStore.getState().previewImage && (
+          {previewImage && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center" onClick={() => setPreviewImage(null)}>
               <button onClick={() => setPreviewImage(null)} className="absolute top-4 right-4 z-10 w-10 h-10 bg-black/60 text-white rounded-full flex items-center justify-center text-xl hover:bg-black/80 transition">✕</button>
-              {useStore.getState().previewImage.endsWith('.glb') || useStore.getState().previewImage.endsWith('.gltf') ? (
+              {previewImage.endsWith('.glb') || previewImage.endsWith('.gltf') ? (
                 <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} exit={{ scale: 0.8 }} onClick={e => e.stopPropagation()}>
                   <model-viewer 
-                    src={useStore.getState().previewImage} 
+                    src={previewImage} 
                     camera-controls 
                     auto-rotate 
                     style={{ width: '90vw', height: '80vh' }}
@@ -530,7 +531,7 @@ export default function ChatWindow() {
                   ></model-viewer>
                 </motion.div>
               ) : (
-                <motion.img initial={{ scale: 0.8 }} animate={{ scale: 1 }} exit={{ scale: 0.8 }} src={useStore.getState().previewImage} alt="Preview" className="max-w-full max-h-full object-contain" />
+                <motion.img initial={{ scale: 0.8 }} animate={{ scale: 1 }} exit={{ scale: 0.8 }} src={previewImage} alt="Preview" className="max-w-full max-h-full object-contain" />
               )}
             </motion.div>
           )}
