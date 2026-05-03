@@ -1,6 +1,6 @@
 import { useStore } from '../store'
 import { useState, useEffect } from 'react'
-import { Search, UserPlus, Bell, Check, X, Clock, UserCheck, MessageSquare, Users } from 'lucide-react'
+import { Search, UserPlus, Bell, Check, X, Clock, UserCheck, MessageSquare, Users, ChevronRight } from 'lucide-react'
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -32,6 +32,8 @@ export default function Contacts() {
   const [showCreateGroup, setShowCreateGroup] = useState(false)
   const [groupName, setGroupName] = useState('')
   const [selectedMembers, setSelectedMembers] = useState([])
+  const [showGroupMembers, setShowGroupMembers] = useState(null)
+  const [groupMemberList, setGroupMemberList] = useState([])
 
   useEffect(() => {
     fetchFriends()
@@ -57,6 +59,17 @@ export default function Contacts() {
     setSelectedMembers(prev => 
       prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]
     )
+  }
+
+  const handleGroupClick = async (g) => {
+    try {
+      const res = await fetch(`/api/groups/${g.id}/members`, {
+        headers: { Authorization: `Bearer ${useStore.getState().token}` }
+      })
+      const data = await res.json()
+      setGroupMemberList(data.members || [])
+      setShowGroupMembers(g)
+    } catch (e) { toast.error('加载失败') }
   }
 
   const handleSearch = async () => {
@@ -299,7 +312,7 @@ export default function Contacts() {
           </div>
           {groups.length > 0 ? (
             groups.map(g => (
-              <div key={g.id} className="flex items-center p-4 bg-white border-b border-wechat-border active:bg-wechat-bg transition">
+              <div key={g.id} onClick={() => handleGroupClick(g)} className="flex items-center p-4 bg-white border-b border-wechat-border active:bg-wechat-bg transition cursor-pointer">
                 <div className="w-10 h-10 rounded-lg bg-gray-500 flex items-center justify-center text-white flex-shrink-0">
                   <MessageSquare size={20} />
                 </div>
@@ -309,6 +322,7 @@ export default function Contacts() {
                     {g.owner_id === currentUser?.id ? '群主' : '成员'}
                   </p>
                 </div>
+                <ChevronRight size={18} className="text-gray-300" />
               </div>
             ))
           ) : (
@@ -459,6 +473,37 @@ export default function Contacts() {
                 <button onClick={handleCreateGroup} className="flex-1 py-2.5 bg-wechat-green text-white rounded-lg font-medium active:scale-95 transition">
                   创建（{selectedMembers.length}人）
                 </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Group Members Modal */}
+      <AnimatePresence>
+        {showGroupMembers && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center" onClick={() => setShowGroupMembers(null)}>
+            <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} className="bg-white w-full sm:max-w-sm sm:rounded-2xl rounded-t-2xl max-h-[70vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between p-4 border-b">
+                <h3 className="font-bold">{showGroupMembers.name} ({groupMemberList.length}人)</h3>
+                <button onClick={() => setShowGroupMembers(null)} className="text-gray-400"><X size={20} /></button>
+              </div>
+              <div className="overflow-y-auto max-h-[55vh] p-4">
+                {groupMemberList.length === 0 ? (
+                  <p className="text-center text-gray-400 py-8">暂无成员</p>
+                ) : (
+                  <div className="grid grid-cols-4 gap-4">
+                    {groupMemberList.map(m => (
+                      <div key={m.id} className="flex flex-col items-center">
+                        <div className="w-12 h-12 rounded-lg bg-wechat-green/20 flex items-center justify-center text-wechat-green font-bold">
+                          {m.nickname?.[0] || '?'}
+                        </div>
+                        <span className="text-xs mt-1 truncate w-full text-center">{m.nickname || '未知'}</span>
+                        {m.role === 1 && <span className="text-[10px] text-wechat-green">群主</span>}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </motion.div>
           </motion.div>
