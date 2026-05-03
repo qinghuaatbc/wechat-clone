@@ -374,21 +374,11 @@ export default function ChatWindow() {
                   <Download size={16} />
                 </a>
               </div>
-            ) : msg.type === 2 ? (
-              <audio controls src={msg.content} className="w-48 h-8" preload="none" />
-            ) : (
-              <span className="whitespace-pre-wrap break-words">{msg.content}</span>
-            )}
-             
-            {isMine && (
-              <div className="absolute -right-6 top-1/2 -translate-y-1/2">
-                {msg.status === 2 ? <CheckCheck size={14} className="text-blue-500" /> : <Check size={14} className="text-wechat-gray" />}
-              </div>
-            )}
-          </div>
-        </motion.div>
-    )
+            )
   }
+
+  return (
+    <SwipeBack onSwipe={() => navigate(-1)}>
       <div className="flex flex-col h-screen max-w-md mx-auto bg-[#F5F5F5] dark:bg-wechat-dark">
         {/* 全局字体大小控制 */}
         <header className="flex items-center justify-between px-4 py-3 bg-wechat-bar dark:bg-wechat-dark border-b border-wechat-border z-10">
@@ -512,10 +502,10 @@ export default function ChatWindow() {
         </AnimatePresence>
 
         {/* Hidden file inputs */}
-        <input ref={videoInputRef} type="file" accept="video/*" className="absolute top-[-9999px] left-[-9999px] opacity-0 pointer-events-none" onChange={handleVideoUpload} />
-        <input ref={fileInputRef} type="file" className="absolute top-[-9999px] left-[-9999px] opacity-0 pointer-events-none" onChange={handleFileUpload} />
-        <input ref={model3dRef} type="file" accept=".glb,.gltf,.obj,.stl,.fbx" className="absolute top-[-9999px] left-[-9999px] opacity-0 pointer-events-none" onChange={handle3DModelUpload} />
-        <input ref={imageInputRef} type="file" accept="image/*" className="absolute top-[-9999px] left-[-9999px] opacity-0 pointer-events-none" onChange={handleImageUpload} />
+        <input ref={videoInputRef} type="file" accept="video/*" className="absolute -top-full -left-full opacity-0 pointer-events-none" onChange={handleVideoUpload} />
+        <input ref={fileInputRef} type="file" className="absolute -top-full -left-full opacity-0 pointer-events-none" onChange={handleFileUpload} />
+        <input ref={model3dRef} type="file" accept=".glb,.gltf,.obj,.stl,.fbx" className="absolute -top-full -left-full opacity-0 pointer-events-none" onChange={handle3DModelUpload} />
+        <input ref={imageInputRef} type="file" accept="image/*" className="absolute -top-full -left-full opacity-0 pointer-events-none" onChange={handleImageUpload} />
 
         {/* Image/3D Preview */}
         <AnimatePresence>
