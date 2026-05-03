@@ -1,25 +1,25 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Upload, FolderPlus, Folder, File, Download, Trash2, Share2, Globe, Lock, Users, Image, Video, Music, FileText, Archive } from 'lucide-react'
 import { useStore } from '../store'
 import { toast } from 'sonner'
 
-const TYPE_ICONS = {
-  image: { icon: Image, color: 'text-green-500' },
-  video: { icon: Video, color: 'text-blue-500' },
-  audio: { icon: Music, color: 'text-pink-500' },
-  document: { icon: FileText, color: 'text-orange-500' },
-  archive: { icon: Archive, color: 'text-purple-500' },
-  '3d-model': { icon: File, color: 'text-cyan-500' },
-  dir: { icon: Folder, color: 'text-yellow-500' },
+const api = (token) => async (url, opts = {}) => {
+  const headers = {}
+  if (!(opts.body instanceof FormData)) headers['Content-Type'] = 'application/json'
+  headers['Authorization'] = `Bearer ${token}`
+  const res = await fetch(url, { ...opts, headers })
+  if (res.status === 204) return null
+  const data = await res.json().catch(() => null)
+  if (!res.ok) throw new Error(data?.error || `请求失败 (${res.status})`)
+  return data
 }
-
-const PERM_NAMES = { 0: '私密', 1: '好友', 2: '群组', 3: '公开' }
-const PERM_ICONS = { 0: Lock, 1: Users, 2: Users, 3: Globe }
 
 export default function CloudDisk() {
   const navigate = useNavigate()
   const token = useStore(s => s.token)
+  const fetch = useCallback(api(token), [token])
+
   const [files, setFiles] = useState([])
   const [shared, setShared] = useState([])
   const [currentDir, setCurrentDir] = useState(null)
@@ -31,44 +31,31 @@ export default function CloudDisk() {
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef(null)
 
-  const api = async (url, opts = {}) => {
-    const headers = { ...opts.headers, Authorization: `Bearer ${token}` }
-    if (opts.body && typeof opts.body === 'string') headers['Content-Type'] = 'application/json'
-    const res = await fetch(url, { ...opts, headers })
-    const data = await res.json()
-    if (!res.ok) throw new Error(data.error || `请求失败 (${res.status})`)
-    return data
-  }
-
-  const loadFiles = async () => {
+  const loadFiles = useCallback(async () => {
     try {
       const params = currentDir ? `?parent_id=${currentDir}` : ''
-      const data = await api(`/api/cloud/list${params}`)
+      const data = await fetch(`/api/cloud/list${params}`)
       setFiles(data.files || [])
-    } catch (e) { toast.error('加载文件失败: ' + e.message) }
-  }
+    } catch (e) { toast.error(e.message) }
+  }, [currentDir, fetch])
 
-  const loadShared = async () => {
-    try {
-      const data = await api('/api/cloud/shared')
-      setShared(data.files || [])
-    } catch (e) { toast.error('加载共享失败: ' + e.message) }
-  }
-
-  useEffect(() => { if (tab === 'my') loadFiles() }, [currentDir, tab])
-  useEffect(() => { if (tab === 'shared') loadShared() }, [tab])
+  useEffect(() => { if (tab === 'my') loadFiles() }, [loadFiles, tab])
+  useEffect(() => {
+    if (tab !== 'shared') return
+    fetch('/api/cloud/shared').then(d => setShared(d.files || [])).catch(e => toast.error(e.message))
+  }, [tab, fetch])
 
   const createFolder = async () => {
-    if (!newFolderName.trim()) return
+    if (!newFolderName.trim()) { toast.error('请输入目录名称'); return }
     try {
-      const body = { name: newFolderName }
+      const body = { name: newFolderName.trim() }
       if (currentDir) body.parent_id = currentDir
-      await api('/api/cloud/mkdir', { method: 'POST', body: JSON.stringify(body) })
+      await fetch('/api/cloud/mkdir', { method: 'POST', body: JSON.stringify(body) })
       setShowNewFolder(false)
       setNewFolderName('')
       toast.success('目录已创建')
       loadFiles()
-    } catch (e) { toast.error('创建目录失败: ' + e.message) }
+    } catch (e) { toast.error(e.message) }
   }
 
   const uploadFile = async (e) => {
@@ -79,10 +66,10 @@ export default function CloudDisk() {
       const fd = new FormData()
       fd.append('file', file)
       if (currentDir) fd.append('parent_id', currentDir)
-      await api('/api/cloud/upload', { method: 'POST', body: fd })
-      toast.success('上传成功')
+      await fetch('/api/cloud/upload', { method: 'POST', body: fd })
+      toast.success(`"${file.name}" 上传成功`)
       loadFiles()
-    } catch (e) { toast.error('上传失败: ' + e.message) }
+    } catch (e) { toast.error(e.message) }
     setUploading(false)
     e.target.value = ''
   }
@@ -90,19 +77,19 @@ export default function CloudDisk() {
   const deleteFile = async (id) => {
     if (!confirm('确定删除?')) return
     try {
-      await api(`/api/cloud/${id}`, { method: 'DELETE' })
+      await fetch(`/api/cloud/${id}`, { method: 'DELETE' })
       toast.success('已删除')
       loadFiles()
-    } catch (e) { toast.error('删除失败: ' + e.message) }
+    } catch (e) { toast.error(e.message) }
   }
 
   const shareFile = async (fileId, permission) => {
     try {
-      await api('/api/cloud/share', { method: 'POST', body: JSON.stringify({ file_id: fileId, permission }) })
+      await fetch('/api/cloud/share', { method: 'POST', body: JSON.stringify({ file_id: fileId, permission }) })
       setShowShare(null)
-      toast.success(PERM_NAMES[permission] + '已更新')
+      toast.success('分享已更新')
       loadFiles()
-    } catch (e) { toast.error('分享失败: ' + e.message) }
+    } catch (e) { toast.error(e.message) }
   }
 
   const enterDir = (dir) => {
@@ -110,9 +97,9 @@ export default function CloudDisk() {
     setPath(prev => [...prev, { id: dir.id, name: dir.name }])
   }
 
-  const getIcon = (f) => {
-    if (f.is_dir) return TYPE_ICONS.dir
-    return TYPE_ICONS[f.type] || { icon: File, color: 'text-gray-500' }
+  const handleDownload = (f) => {
+    if (f.is_dir) return
+    window.open(f.path, '_blank')
   }
 
   const formatSize = (bytes) => {
@@ -122,14 +109,16 @@ export default function CloudDisk() {
     return (bytes / (1024 * 1024)).toFixed(1) + 'MB'
   }
 
-  const handleDownload = (f) => {
-    if (f.is_dir) return
-    const a = document.createElement('a')
-    a.href = f.path
-    a.download = f.name
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
+  const getIcon = (f) => {
+    const ICONS = {
+      dir: { icon: Folder, color: 'text-yellow-500' },
+      image: { icon: Image, color: 'text-green-500' },
+      video: { icon: Video, color: 'text-blue-500' },
+      audio: { icon: Music, color: 'text-pink-500' },
+      document: { icon: FileText, color: 'text-orange-500' },
+      archive: { icon: Archive, color: 'text-purple-500' },
+    }
+    return ICONS[f.is_dir ? 'dir' : f.type] || { icon: File, color: 'text-gray-500' }
   }
 
   return (
@@ -160,7 +149,7 @@ export default function CloudDisk() {
         </div>
       )}
 
-      {uploading && <div className="px-4 py-2 bg-wechat-green/10 text-sm text-wechat-green text-center">上传中...</div>}
+      {uploading && <div className="px-4 py-2 bg-wechat-green/10 text-sm text-center text-wechat-green">上传中...</div>}
 
       <div className="flex-1 overflow-y-auto pb-4">
         {tab === 'my' && (
@@ -186,7 +175,7 @@ export default function CloudDisk() {
                     <Icon.icon size={22} className={Icon.color} />
                   </div>
                   <div className="ml-3 flex-1 min-w-0 cursor-pointer" onClick={() => f.is_dir && enterDir(f)}>
-                    <p className="text-sm font-medium truncate">{f.name}</p>
+                    <p className="text-sm font-medium truncate">{f.name || '未命名'}</p>
                     <p className="text-xs text-gray-400">{f.is_dir ? '' : formatSize(f.size)}</p>
                   </div>
                   <div className="flex items-center gap-1">
@@ -251,17 +240,18 @@ export default function CloudDisk() {
           <div className="bg-white rounded-xl p-6 w-full max-w-sm" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold mb-1">分享设置</h3>
             <p className="text-sm text-gray-500 mb-4">{showShare.name}</p>
-            {[0, 1, 3].map(perm => {
-              const PIc = PERM_ICONS[perm]
-              return (
-                <button key={perm} onClick={() => shareFile(showShare.id, perm)}
-                  className={`w-full flex items-center gap-3 p-3 rounded-lg mb-2 text-sm transition ${showShare.permission === perm ? 'bg-wechat-green/10 text-wechat-green' : 'bg-gray-50 hover:bg-gray-100'}`}>
-                  <PIc size={18} />
-                  <span>{PERM_NAMES[perm]}</span>
-                  {showShare.permission === perm && <span className="ml-auto text-wechat-green">✓</span>}
-                </button>
-              )
-            })}
+            {[
+              { perm: 0, label: '私密', icon: Lock },
+              { perm: 1, label: '好友可见', icon: Users },
+              { perm: 3, label: '公开', icon: Globe },
+            ].map(({ perm, label, icon: PIc }) => (
+              <button key={perm} onClick={() => shareFile(showShare.id, perm)}
+                className={`w-full flex items-center gap-3 p-3 rounded-lg mb-2 text-sm transition ${showShare.permission === perm ? 'bg-wechat-green/10 text-wechat-green' : 'bg-gray-50 hover:bg-gray-100'}`}>
+                <PIc size={18} />
+                <span>{label}</span>
+                {showShare.permission === perm && <span className="ml-auto text-wechat-green">✓</span>}
+              </button>
+            ))}
             <button onClick={() => setShowShare(null)} className="w-full mt-2 py-2.5 bg-gray-100 rounded-lg text-sm">关闭</button>
           </div>
         </div>
