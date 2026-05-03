@@ -12,16 +12,17 @@ import (
 )
 
 func serveFile(c *gin.Context, baseDir, relPath string) {
-	fp := baseDir + "/" + relPath
+	fp := baseDir + relPath
 	data, err := os.ReadFile(fp)
 	if err != nil {
 		c.Status(404)
 		return
 	}
-	ext := filepath.Ext(fp)
-	ct := mime.TypeByExtension(ext)
-	if ct == "" {
-		ct = "application/octet-stream"
+	ct := "application/octet-stream"
+	if ext := filepath.Ext(fp); ext == ".glb" || ext == ".gltf" {
+		ct = "model/gltf-binary"
+	} else if t := mime.TypeByExtension(ext); t != "" {
+		ct = t
 	}
 	c.Data(200, ct, data)
 }
