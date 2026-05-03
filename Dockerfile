@@ -1,3 +1,11 @@
+FROM node:20-alpine AS frontend-builder
+
+WORKDIR /app/web-react
+COPY web-react/package.json web-react/package-lock.json ./
+RUN npm ci || (npm install && npm rebuild)
+COPY web-react/ .
+RUN npm install --save-dev vite && npm run build
+
 FROM golang:1.25-alpine AS builder
 
 ENV GOTOOLCHAIN=auto
@@ -13,7 +21,7 @@ FROM alpine:latest
 
 WORKDIR /app
 COPY --from=builder /app/wechat-clone .
-COPY web-react/dist ./web-react/dist
+COPY --from=frontend-builder /app/web-react/dist ./web-react/dist
 
 EXPOSE 8080
 CMD ["./wechat-clone"]
