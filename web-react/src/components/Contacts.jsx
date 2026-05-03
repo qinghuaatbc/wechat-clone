@@ -42,11 +42,11 @@ export default function Contacts() {
   }, [])
 
   const handleCreateGroup = async () => {
-    if (!groupName.trim() || selectedMembers.length === 0) {
-      toast.error('请输入群名并选择成员')
+    if (!groupName.trim()) {
+      toast.error('请输入群名称')
       return
     }
-    await createGroup(groupName, selectedMembers)
+    await createGroup(groupName.trim(), selectedMembers)
     setShowCreateGroup(false)
     setGroupName('')
     setSelectedMembers([])

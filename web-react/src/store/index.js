@@ -139,10 +139,9 @@ export const useStore = create((set, get) => ({
   },
 
   createGroup: async (name, memberIds) => {
-    try {
-      await api.post('/groups', { name, members: memberIds })
-      get().fetchGroups()
-    } catch (e) { toast.error('创建群聊失败') }
+    const res = await api.post('/groups', { name, members: memberIds })
+    get().fetchGroups()
+    return res
   },
 
   fetchGroupMembers: async (groupId) => {
