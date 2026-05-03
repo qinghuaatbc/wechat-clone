@@ -3,12 +3,22 @@ package handlers
 import (
 	"mime"
 	"os"
+	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 	"github.com/qinghua/wechat-clone/internal/middleware"
 	"github.com/qinghua/wechat-clone/internal/services"
 	"gorm.io/gorm"
 )
+
+func serveFile(c *gin.Context, baseDir, relPath string) {
+	fp := baseDir + "/" + relPath
+	ext := filepath.Ext(fp)
+	if ct := mime.TypeByExtension(ext); ct != "" {
+		c.Header("Content-Type", ct)
+	}
+	c.File(fp)
+}
 
 func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *services.RedisService, hub *services.WSHub, jwtSecret string) {
 	mime.AddExtensionType(".glb", "model/gltf-binary")
@@ -92,14 +102,14 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *services.RedisService, hub *
 		r.Static("/assets", "./web-react/dist/assets")
  	r.Static("/cloud-files", "./uploads/cloud")
 		r.GET("/uploads/*filepath", func(c *gin.Context) {
-			c.File(uploadH.UploadDir + "/" + c.Param("filepath"))
+			serveFile(c, uploadH.UploadDir, c.Param("filepath"))
 		})
 	} else {
 		r.StaticFile("/", "./web/index.html")
 		r.StaticFile("/css/style.css", "./web/css/style.css")
 		r.StaticFile("/js/app.js", "./web/js/app.js")
 		r.GET("/uploads/*filepath", func(c *gin.Context) {
-			c.File(uploadH.UploadDir + "/" + c.Param("filepath"))
+			serveFile(c, uploadH.UploadDir, c.Param("filepath"))
 		})
 	}
 }
