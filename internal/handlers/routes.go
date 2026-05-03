@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"os"
+	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/qinghua/wechat-clone/internal/config"
 	"github.com/qinghua/wechat-clone/internal/middleware"
 	"github.com/qinghua/wechat-clone/internal/services"
 	"gorm.io/gorm"
@@ -76,11 +78,39 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *services.RedisService, hub *
 			c.File("./web-react/dist/index.html")
 		})
 		r.Static("/assets", "./web-react/dist/assets")
-		r.Static("/uploads", uploadH.UploadDir)
+		r.GET("/uploads/*filepath", func(c *gin.Context) {
+			filepath := uploadH.UploadDir + "/" + c.Param("filepath")
+			ext := strings.ToLower(filepath[strings.LastIndex(filepath, "."):])
+			mimeTypes := map[string]string{
+				".glb": "model/gltf-binary",
+				".gltf": "model/gltf+json",
+				".obj": "text/plain",
+				".stl": "application/vnd.ms-pki.stl",
+				".fbx": "application/octet-stream",
+			}
+			if ct, ok := mimeTypes[ext]; ok {
+				c.Header("Content-Type", ct)
+			}
+			c.File(filepath)
+		})
 	} else {
 		r.StaticFile("/", "./web/index.html")
 		r.StaticFile("/css/style.css", "./web/css/style.css")
 		r.StaticFile("/js/app.js", "./web/js/app.js")
-		r.Static("/uploads", uploadH.UploadDir)
+		r.GET("/uploads/*filepath", func(c *gin.Context) {
+			filepath := uploadH.UploadDir + "/" + c.Param("filepath")
+			ext := strings.ToLower(filepath[strings.LastIndex(filepath, "."):])
+			mimeTypes := map[string]string{
+				".glb": "model/gltf-binary",
+				".gltf": "model/gltf+json",
+				".obj": "text/plain",
+				".stl": "application/vnd.ms-pki.stl",
+				".fbx": "application/octet-stream",
+			}
+			if ct, ok := mimeTypes[ext]; ok {
+				c.Header("Content-Type", ct)
+			}
+			c.File(filepath)
+		})
 	}
 }

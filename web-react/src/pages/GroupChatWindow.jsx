@@ -330,6 +330,19 @@ export default function GroupChatWindow() {
                   <Download size={18} className="text-wechat-green" />
                 </a>
               </div>
+            ) : msg.type === 6 ? (
+              <div className="relative">
+                <model-viewer 
+                  src={msg.content} 
+                  camera-controls 
+                  auto-rotate 
+                  style={{ width: '200px', height: '200px', background: '#1a1a2e' }}
+                  className="rounded-lg"
+                ></model-viewer>
+                <a href={msg.content} download={msg.file_name} className="absolute top-2 right-2 p-1.5 bg-black/60 text-white rounded-full opacity-0 hover:opacity-100 transition" title="下载">
+                  <Download size={16} />
+                </a>
+              </div>
             ) : msg.type === 2 ? (
               <audio controls src={msg.content} className="w-48 h-8" preload="none" />
             ) : (

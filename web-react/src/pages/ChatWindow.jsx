@@ -335,7 +335,7 @@ export default function ChatWindow() {
             ) : msg.type === 5 ? (
               <div className="flex items-center gap-3 min-w-[180px]">
                 <div className="w-10 h-10 rounded-lg bg-wechat-bg dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
-                  <File size={20} className="text-wechat-green" />
+                  <FileText size={20} className="text-wechat-green" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate dark:text-white">{msg.file_name || '文件'}</p>
@@ -343,6 +343,19 @@ export default function ChatWindow() {
                 </div>
                 <a href={msg.content} download={msg.file_name} className="p-1.5 rounded-full hover:bg-wechat-bg dark:hover:bg-gray-700 transition">
                   <Download size={18} className="text-wechat-green" />
+                </a>
+              </div>
+            ) : msg.type === 6 ? (
+              <div className="relative">
+                <model-viewer 
+                  src={msg.content} 
+                  camera-controls 
+                  auto-rotate 
+                  style={{ width: '200px', height: '200px', background: '#1a1a2e' }}
+                  className="rounded-lg"
+                ></model-viewer>
+                <a href={msg.content} download={msg.file_name} className="absolute top-2 right-2 p-1.5 bg-black/60 text-white rounded-full opacity-0 hover:opacity-100 transition" title="下载">
+                  <Download size={16} />
                 </a>
               </div>
             ) : msg.type === 2 ? (
