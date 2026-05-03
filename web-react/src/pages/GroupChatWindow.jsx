@@ -517,6 +517,7 @@ export default function GroupChatWindow() {
               {contextMenu.msg.sender_id === user.id && !contextMenu.msg.is_recalled && (
                 <button onClick={() => handleRecall(contextMenu.msg.id)} className="w-full px-4 py-2.5 text-left text-sm hover:bg-wechat-bg flex items-center gap-2"><RotateCcw size={16} /> 撤回</button>
               )}
+              <button onClick={() => handleDelete(contextMenu.msg.id)} className="w-full px-4 py-2.5 text-left text-sm hover:bg-wechat-bg text-red-500 flex items-center gap-2"><Trash2 size={16} /> 删除</button>
             </motion.div>
           </>
         )}
