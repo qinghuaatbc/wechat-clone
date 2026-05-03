@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import { Toaster } from 'sonner'
+import '@google/model-viewer'
 import './index.css'
 
 class ErrorBoundary extends React.Component {
