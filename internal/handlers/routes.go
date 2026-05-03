@@ -13,11 +13,17 @@ import (
 
 func serveFile(c *gin.Context, baseDir, relPath string) {
 	fp := baseDir + "/" + relPath
-	ext := filepath.Ext(fp)
-	if ct := mime.TypeByExtension(ext); ct != "" {
-		c.Header("Content-Type", ct)
+	data, err := os.ReadFile(fp)
+	if err != nil {
+		c.Status(404)
+		return
 	}
-	c.File(fp)
+	ext := filepath.Ext(fp)
+	ct := mime.TypeByExtension(ext)
+	if ct == "" {
+		ct = "application/octet-stream"
+	}
+	c.Data(200, ct, data)
 }
 
 func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *services.RedisService, hub *services.WSHub, jwtSecret string) {
