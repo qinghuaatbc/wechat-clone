@@ -85,7 +85,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *services.RedisService, hub *
 			c.File("./web-react/dist/index.html")
 		})
 		r.Static("/assets", "./web-react/dist/assets")
-		r.Static("/uploads/cloud", "./uploads/cloud")
+	r.Static("/cloud-files", "./uploads/cloud")
 		r.GET("/uploads/*filepath", func(c *gin.Context) {
 			filepath := uploadH.UploadDir + "/" + c.Param("filepath")
 			ext := strings.ToLower(filepath[strings.LastIndex(filepath, "."):])

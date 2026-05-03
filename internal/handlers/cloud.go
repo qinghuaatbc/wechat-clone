@@ -84,7 +84,7 @@ func (h *CloudHandler) UploadFile(c *gin.Context) {
 	cf := models.CloudFile{
 		UserID:   userID,
 		Name:     file.Filename,
-		Path:     "/uploads/cloud/" + filename,
+		Path:     "/cloud-files/" + filename,
 		Type:     detectCloudFileType(ext),
 		Size:     file.Size,
 		ParentID: parentID,
