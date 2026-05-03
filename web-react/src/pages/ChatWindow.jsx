@@ -199,15 +199,19 @@ export default function ChatWindow() {
   const handleImageUpload = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
-    const compressed = await compressImage(file)
-    const formData = new FormData()
-    formData.append('file', compressed, 'image.jpg')
-    const res = await fetch('/api/upload', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: formData })
-    const data = await res.json()
-    useStore.getState().addMessage({ id: `img-${Date.now()}`, sender_id: user.id, receiver_id: isFileHelper ? user.id : id, content: data.url, type: 3, created_at: new Date().toISOString() })
-    await fetch('/api/messages/send', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ receiver_id: isFileHelper ? user.id : id, content: data.url, type: 3 }) })
-    e.target.value = ''
     setShowAttachMenu(false)
+    const formData = new FormData()
+    formData.append('file', file)
+    try {
+      const res = await fetch('/api/upload', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: formData })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || '上传失败')
+      useStore.getState().addMessage({ id: `img-${Date.now()}`, sender_id: user.id, receiver_id: isFileHelper ? user.id : id, content: data.url, type: 3, created_at: new Date().toISOString() })
+      await fetch('/api/messages/send', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ receiver_id: isFileHelper ? user.id : id, content: data.url, type: 3 }) })
+    } catch (err) {
+      toast.error('图片上传失败')
+    }
+    e.target.value = ''
   }
 
   const handleVideoUpload = async (e) => {
@@ -355,33 +359,22 @@ export default function ChatWindow() {
                 </a>
               </div>
             ) : msg.type === 6 ? (
-              <div className="relative">
+              <div 
+                className="relative cursor-pointer" 
+                onClick={() => setPreviewImage(msg.content)}
+              >
                 <model-viewer 
                   src={msg.content} 
                   camera-controls 
                   auto-rotate 
                   style={{ width: '200px', height: '200px', background: '#1a1a2e' }}
-                  className="rounded-lg"
+                  className="rounded-lg pointer-events-none"
                 ></model-viewer>
-                <a href={msg.content} download={msg.file_name} className="absolute top-2 right-2 p-1.5 bg-black/60 text-white rounded-full hover:bg-black/80 transition" title="下载">
+                <a href={msg.content} download={msg.file_name} className="absolute top-2 right-2 p-1.5 bg-black/60 text-white rounded-full hover:bg-black/80 transition" title="下载" onClick={e => e.stopPropagation()}>
                   <Download size={16} />
                 </a>
               </div>
-            ) : msg.type === 2 ? (
-              <audio controls src={msg.content} className="w-48 h-8" preload="none" />
-            ) : (
-              <span className="whitespace-pre-wrap break-words">{msg.content}</span>
-            )}
-            
-            {isMine && (
-              <div className="absolute -right-6 top-1/2 -translate-y-1/2">
-                {msg.status === 2 ? <CheckCheck size={14} className="text-blue-500" /> : <Check size={14} className="text-wechat-gray" />}
-              </div>
-            )}
-          </div>
-        </div>
-      </motion.div>
-    )
+            )
   }
 
   return (
@@ -514,11 +507,23 @@ export default function ChatWindow() {
         <input ref={model3dRef} type="file" accept=".glb,.gltf,.obj,.stl,.fbx" className="absolute -top-full -left-full opacity-0 pointer-events-none" onChange={handle3DModelUpload} />
         <input ref={imageInputRef} type="file" accept="image/*" className="absolute -top-full -left-full opacity-0 pointer-events-none" onChange={handleImageUpload} />
 
-        {/* Image Preview */}
+        {/* Image/3D Preview */}
         <AnimatePresence>
           {useStore.getState().previewImage && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center" onClick={() => setPreviewImage(null)}>
-              <motion.img initial={{ scale: 0.8 }} animate={{ scale: 1 }} exit={{ scale: 0.8 }} src={useStore.getState().previewImage} alt="Preview" className="max-w-full max-h-full object-contain" />
+              {useStore.getState().previewImage.endsWith('.glb') || useStore.getState().previewImage.endsWith('.gltf') ? (
+                <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} exit={{ scale: 0.8 }} onClick={e => e.stopPropagation()}>
+                  <model-viewer 
+                    src={useStore.getState().previewImage} 
+                    camera-controls 
+                    auto-rotate 
+                    style={{ width: '90vw', height: '80vh' }}
+                    className="rounded-lg"
+                  ></model-viewer>
+                </motion.div>
+              ) : (
+                <motion.img initial={{ scale: 0.8 }} animate={{ scale: 1 }} exit={{ scale: 0.8 }} src={useStore.getState().previewImage} alt="Preview" className="max-w-full max-h-full object-contain" />
+              )}
             </motion.div>
           )}
         </AnimatePresence>

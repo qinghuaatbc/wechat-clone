@@ -331,15 +331,18 @@ export default function GroupChatWindow() {
                 </a>
               </div>
             ) : msg.type === 6 ? (
-              <div className="relative">
+              <div 
+                className="relative cursor-pointer" 
+                onClick={() => setPreviewImage(msg.content)}
+              >
                 <model-viewer 
                   src={msg.content} 
                   camera-controls 
                   auto-rotate 
                   style={{ width: '200px', height: '200px', background: '#1a1a2e' }}
-                  className="rounded-lg"
+                  className="rounded-lg pointer-events-none"
                 ></model-viewer>
-                <a href={msg.content} download={msg.file_name} className="absolute top-2 right-2 p-1.5 bg-black/60 text-white rounded-full opacity-0 hover:opacity-100 transition" title="下载">
+                <a href={msg.content} download={msg.file_name} className="absolute top-2 right-2 p-1.5 bg-black/60 text-white rounded-full hover:bg-black/80 transition" title="下载" onClick={e => e.stopPropagation()}>
                   <Download size={16} />
                 </a>
               </div>
