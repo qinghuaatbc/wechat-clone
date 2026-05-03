@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/qinghua/wechat-clone/internal/config"
 	"github.com/qinghua/wechat-clone/internal/middleware"
 	"github.com/qinghua/wechat-clone/internal/services"
 	"gorm.io/gorm"
