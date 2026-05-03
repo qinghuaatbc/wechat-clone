@@ -394,7 +394,6 @@ export default function ChatWindow() {
           <h2 className="font-semibold text-lg">{friend.nickname}</h2>
           <div className="w-8" />
         </header>
-        </header>
 
         <div className="flex-1 overflow-y-auto pb-4" onWheel={(e) => { if (e.target.scrollTop < 10) {/* Load more */ } }}>
           {loading && messages.length === 0 ? (
