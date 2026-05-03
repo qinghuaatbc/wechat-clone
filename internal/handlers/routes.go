@@ -10,8 +10,8 @@ import (
 	"gorm.io/gorm"
 )
 
-func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *services.RedisService, hub *services.WSHub) {
-	authH := NewAuthHandler(db, redis)
+func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *services.RedisService, hub *services.WSHub, jwtSecret string) {
+	authH := NewAuthHandler(db, redis, jwtSecret)
 	friendH := NewFriendHandler(db, redis, hub)
 	msgH := NewMessageHandler(db, redis, hub)
 	groupH := NewGroupHandler(db, redis, hub)
@@ -19,7 +19,6 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *services.RedisService, hub *
 	wsH := NewWSHandler(hub, msgH)
 	uploadH := NewUploadHandler()
 
-	const jwtSecret = "wechat-clone-secret"
 	auth := middleware.AuthMiddleware(jwtSecret)
 
 	r.Use(middleware.RateLimit())

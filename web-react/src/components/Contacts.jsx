@@ -1,6 +1,7 @@
 import { useStore } from '../store'
 import { useState, useEffect } from 'react'
 import { Search, UserPlus, Bell, Check, X, Clock, UserCheck, MessageSquare, Users } from 'lucide-react'
+import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function Contacts() {

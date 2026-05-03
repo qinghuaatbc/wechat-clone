@@ -374,8 +374,13 @@ export default function ChatWindow() {
                   <Download size={16} />
                 </a>
               </div>
-            )
-  }
+            ) : null
+          }
+                </div>
+              </div>
+            </motion.div>
+          )
+        }
 
   return (
     <SwipeBack onSwipe={() => navigate(-1)}>

@@ -166,7 +166,7 @@ async function searchUser() {
   const results = document.getElementById('search-results');
   results.innerHTML = '';
   (data.users || []).forEach(u => {
-    results.innerHTML += `<div class="list-item" onclick="addFriend('${u.wxid}')">
+    results.innerHTML += `<div class="list-item" onclick="addFriend('${u.id}')">
       <div class="avatar">${u.nickname?.[0] || '?'}</div>
       <div class="item-info">
         <div class="item-name">${u.nickname}</div>
@@ -177,11 +177,11 @@ async function searchUser() {
   });
 }
 
-async function addFriend(wxid) {
-  await api('/friends/add', {
+async function addFriend(targetId) {
+  await api('/friends/request', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ wxid })
+    body: JSON.stringify({ target_id: targetId })
   });
   alert('添加成功');
   closeModal();

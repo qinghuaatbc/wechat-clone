@@ -32,6 +32,7 @@ services:
       DB_SSLMODE: disable
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET:-wechat-clone-secret-prod}
     depends_on:
       - postgres
       - redis

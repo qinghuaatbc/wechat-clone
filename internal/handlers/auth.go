@@ -15,12 +15,13 @@ import (
 )
 
 type AuthHandler struct {
-	DB    *gorm.DB
-	Redis *services.RedisService
+	DB        *gorm.DB
+	Redis     *services.RedisService
+	JWTSecret string
 }
 
-func NewAuthHandler(db *gorm.DB, redis *services.RedisService) *AuthHandler {
-	return &AuthHandler{DB: db, Redis: redis}
+func NewAuthHandler(db *gorm.DB, redis *services.RedisService, jwtSecret string) *AuthHandler {
+	return &AuthHandler{DB: db, Redis: redis, JWTSecret: jwtSecret}
 }
 
 type RegisterReq struct {
@@ -69,7 +70,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	token := generateToken(user)
+	token := h.generateToken(user)
 
 	c.JSON(http.StatusOK, gin.H{
 		"token":             token,
@@ -98,7 +99,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	token := generateToken(user)
+	token := h.generateToken(user)
 
 	h.Redis.SetUserOnline(user.ID.String())
 
@@ -171,7 +172,7 @@ func (h *AuthHandler) UpdateProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "profile updated"})
 }
 
-func generateToken(user models.User) string {
+func (h *AuthHandler) generateToken(user models.User) string {
 	claims := middleware.JWTClaims{
 		UserID: user.ID,
 		Wxid:   user.Wxid,
@@ -180,6 +181,6 @@ func generateToken(user models.User) string {
 		},
 	}
 
-	token, _ := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte("wechat-clone-secret"))
+	token, _ := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(h.JWTSecret))
 	return token
 }
