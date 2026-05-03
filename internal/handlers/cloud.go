@@ -66,6 +66,11 @@ func (h *CloudHandler) UploadFile(c *gin.Context) {
 		return
 	}
 
+	if file.Size > 100*1024*1024 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "file too large, max 100MB"})
+		return
+	}
+
 	ext := filepath.Ext(file.Filename)
 	filename := fmt.Sprintf("%s_%d%s", uuid.New().String(), time.Now().Unix(), ext)
 	dest := filepath.Join(h.UploadDir, filename)
@@ -208,11 +213,23 @@ func (h *CloudHandler) DeleteFile(c *gin.Context) {
 		return
 	}
 
-	if !cf.IsDir && cf.Path != "" {
-		os.Remove("." + cf.Path)
+	h.deleteRecursive(cf)
+	c.JSON(http.StatusOK, gin.H{"message": "deleted"})
+}
+
+func (h *CloudHandler) deleteRecursive(cf models.CloudFile) {
+	if !cf.IsDir {
+		if cf.Path != "" {
+			os.Remove("." + cf.Path)
+		}
+		h.DB.Delete(&cf)
+		return
 	}
 
-	h.DB.Where("parent_id = ?", cf.ID).Delete(&models.CloudFile{})
+	var children []models.CloudFile
+	h.DB.Where("parent_id = ?", cf.ID).Find(&children)
+	for _, child := range children {
+		h.deleteRecursive(child)
+	}
 	h.DB.Delete(&cf)
-	c.JSON(http.StatusOK, gin.H{"message": "deleted"})
 }

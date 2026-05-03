@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"mime"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/qinghua/wechat-clone/internal/middleware"
@@ -12,19 +14,24 @@ import (
 )
 
 func serveFile(c *gin.Context, baseDir, relPath string) {
-	fp := baseDir + relPath
-	data, err := os.ReadFile(fp)
+	cleanPath := filepath.Clean(baseDir + relPath)
+	if !strings.HasPrefix(cleanPath, filepath.Clean(baseDir)+string(os.PathSeparator)) &&
+		cleanPath != filepath.Clean(baseDir) {
+		c.Status(http.StatusForbidden)
+		return
+	}
+	data, err := os.ReadFile(cleanPath)
 	if err != nil {
-		c.Status(404)
+		c.Status(http.StatusNotFound)
 		return
 	}
 	ct := "application/octet-stream"
-	if ext := filepath.Ext(fp); ext == ".glb" || ext == ".gltf" {
+	if ext := filepath.Ext(cleanPath); ext == ".glb" || ext == ".gltf" {
 		ct = "model/gltf-binary"
 	} else if t := mime.TypeByExtension(ext); t != "" {
 		ct = t
 	}
-	c.Data(200, ct, data)
+	c.Data(http.StatusOK, ct, data)
 }
 
 func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *services.RedisService, hub *services.WSHub, jwtSecret string) {

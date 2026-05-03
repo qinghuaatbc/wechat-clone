@@ -219,7 +219,6 @@ type SearchUserInfo struct {
 	Wxid           string    `json:"wxid"`
 	Nickname       string    `json:"nickname"`
 	Avatar         string    `json:"avatar"`
-	Phone          string    `json:"phone"`
 	IsFriend       bool      `json:"is_friend"`
 	RequestStatus  int       `json:"request_status"`
 	RequestID      uint      `json:"request_id"`
@@ -234,8 +233,8 @@ func (h *FriendHandler) SearchUser(c *gin.Context) {
 	}
 
 	var users []models.User
-	h.DB.Where("id != ? AND (wxid LIKE ? OR nickname LIKE ? OR phone LIKE ?)",
-		userID, "%"+req.Keyword+"%", "%"+req.Keyword+"%", "%"+req.Keyword+"%").
+	h.DB.Where("id != ? AND (wxid LIKE ? OR nickname LIKE ?)",
+		userID, "%"+req.Keyword+"%", "%"+req.Keyword+"%").
 		Find(&users)
 
 	var friendIDs []uuid.UUID
@@ -274,7 +273,6 @@ func (h *FriendHandler) SearchUser(c *gin.Context) {
 			Wxid:          u.Wxid,
 			Nickname:      u.Nickname,
 			Avatar:        u.Avatar,
-			Phone:         u.Phone,
 			IsFriend:      friendMap[u.ID],
 			RequestStatus: status,
 			RequestID:     reqID,
@@ -309,7 +307,6 @@ func (h *FriendHandler) GetRecommend(c *gin.Context) {
 					Wxid:     u.Wxid,
 					Nickname: u.Nickname,
 					Avatar:   u.Avatar,
-					Phone:    u.Phone,
 				})
 			}
 		}
@@ -430,7 +427,6 @@ type AllUser struct {
 	Wxid     string    `json:"wxid"`
 	Nickname string    `json:"nickname"`
 	Avatar   string    `json:"avatar"`
-	Phone    string    `json:"phone"`
 	IsFriend bool      `json:"is_friend"`
 }
 
@@ -456,7 +452,6 @@ func (h *FriendHandler) GetAllUsers(c *gin.Context) {
 			Wxid:     u.Wxid,
 			Nickname: u.Nickname,
 			Avatar:   u.Avatar,
-			Phone:    u.Phone,
 			IsFriend: friendMap[u.ID],
 		})
 	}

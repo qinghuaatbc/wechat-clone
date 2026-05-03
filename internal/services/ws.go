@@ -92,8 +92,10 @@ func (h *WSHub) SendToUser(userID string, data interface{}) {
 	select {
 	case client.send <- msg:
 	default:
+		h.mu.Lock()
 		close(client.send)
 		delete(h.clients, userID)
+		h.mu.Unlock()
 	}
 }
 

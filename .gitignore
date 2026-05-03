@@ -1,5 +1,6 @@
 # Binaries
 wechat-clone
+wechat-clone-linux
 *.exe
 
 # Env
