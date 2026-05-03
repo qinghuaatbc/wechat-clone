@@ -389,22 +389,11 @@ export default function ChatWindow() {
     <SwipeBack onSwipe={() => navigate(-1)}>
       <div className="flex flex-col h-screen max-w-md mx-auto bg-[#F5F5F5] dark:bg-wechat-dark">
         {/* 全局字体大小控制 */}
-        <header className="flex items-center gap-3 px-4 py-3 bg-wechat-bar dark:bg-wechat-dark border-b border-wechat-border z-10">
+        <header className="flex items-center justify-between px-4 py-3 bg-wechat-bar dark:bg-wechat-dark border-b border-wechat-border z-10">
           <button onClick={() => navigate(-1)} className="p-1 active:bg-wechat-bg rounded transition"><ArrowLeft size={24} /></button>
-          {friend.avatar ? (
-            <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0">
-              {friend.avatar.endsWith('.glb') || friend.avatar.endsWith('.gltf') ? (
-                <model-viewer src={friend.avatar} camera-controls auto-rotate interaction-prompt="none" style={{ width: '100%', height: '100%' }}></model-viewer>
-              ) : (
-                <img src={friend.avatar} className="w-full h-full object-cover" />
-              )}
-            </div>
-          ) : (
-            <div className="w-8 h-8 rounded-lg bg-wechat-green/20 flex items-center justify-center text-wechat-green text-sm font-bold flex-shrink-0">
-              {friend.nickname?.[0] || '?'}
-            </div>
-          )}
-          <h2 className="font-semibold text-lg flex-1">{friend.nickname}</h2>
+          <h2 className="font-semibold text-lg">{friend.nickname}</h2>
+          <div className="w-8" />
+        </header>
         </header>
 
         <div className="flex-1 overflow-y-auto pb-4" onWheel={(e) => { if (e.target.scrollTop < 10) {/* Load more */ } }}>
