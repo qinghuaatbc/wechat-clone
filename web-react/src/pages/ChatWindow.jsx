@@ -319,11 +319,23 @@ export default function ChatWindow() {
           }
           
           return (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex ${isMine ? 'justify-end' : 'justify-start'} mb-3 px-4`}>
-              <div className="flex items-end gap-2 max-w-[80%]">
-                {!isMine && (
-                  <div className="w-8 h-8 rounded-lg bg-wechat-green/20 flex items-center justify-center text-wechat-green text-sm font-bold flex-shrink-0">
-                    {friend.nickname?.[0] || '?'}
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex ${isMine ? 'justify-end' : 'justify-start'} mb-3 px-4 items-start`}>
+              <div className={`flex items-start gap-2 max-w-[80%] ${isMine ? 'flex-row-reverse' : ''}`}>
+                {isMine ? (
+                  <div className="w-8 h-8 rounded-full bg-wechat-green/20 flex items-center justify-center text-wechat-green text-sm font-bold flex-shrink-0 overflow-hidden">
+                    {user?.avatar ? (
+                      user.avatar.endsWith('.glb') || user.avatar.endsWith('.gltf') ? (
+                        <model-viewer src={user.avatar} camera-controls auto-rotate interaction-prompt="none" style={{width:'100%',height:'100%'}}></model-viewer>
+                      ) : <img src={user.avatar} className="w-full h-full object-cover" />
+                    ) : (user?.nickname?.[0] || '?')}
+                  </div>
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-wechat-green/20 flex items-center justify-center text-wechat-green text-sm font-bold flex-shrink-0 overflow-hidden">
+                    {friend.avatar ? (
+                      friend.avatar.endsWith('.glb') || friend.avatar.endsWith('.gltf') ? (
+                        <model-viewer src={friend.avatar} camera-controls auto-rotate interaction-prompt="none" style={{width:'100%',height:'100%'}}></model-viewer>
+                      ) : <img src={friend.avatar} className="w-full h-full object-cover" />
+                    ) : (friend.nickname?.[0] || '?')}
                   </div>
                 )}
                 

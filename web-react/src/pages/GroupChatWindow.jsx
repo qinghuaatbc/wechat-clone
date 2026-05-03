@@ -306,11 +306,23 @@ export default function GroupChatWindow() {
     const isMine = msg.sender_id === user?.id
     const sender = groupMembers.find(m => m.id === msg.sender_id)
     return (
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex ${isMine ? 'justify-end' : 'justify-start'} mb-3 px-4`}>
-        <div className="flex items-end gap-2 max-w-[80%]">
-          {!isMine && (
-            <div className="w-8 h-8 rounded-lg bg-wechat-green/20 flex items-center justify-center text-wechat-green text-sm font-bold flex-shrink-0">
-              {sender?.nickname?.[0] || '?'}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex ${isMine ? 'justify-end' : 'justify-start'} mb-3 px-4 items-start`}>
+        <div className={`flex items-start gap-2 max-w-[80%] ${isMine ? 'flex-row-reverse' : ''}`}>
+          {isMine ? (
+            <div className="w-8 h-8 rounded-full bg-wechat-green/20 flex items-center justify-center text-wechat-green text-sm font-bold flex-shrink-0 overflow-hidden">
+              {user?.avatar ? (
+                user.avatar.endsWith('.glb') || user.avatar.endsWith('.gltf') ? (
+                  <model-viewer src={user.avatar} camera-controls auto-rotate interaction-prompt="none" style={{width:'100%',height:'100%'}}></model-viewer>
+                ) : <img src={user.avatar} className="w-full h-full object-cover" />
+              ) : (user?.nickname?.[0] || '?')}
+            </div>
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-wechat-green/20 flex items-center justify-center text-wechat-green text-sm font-bold flex-shrink-0 overflow-hidden">
+              {sender?.avatar ? (
+                sender.avatar.endsWith('.glb') || sender.avatar.endsWith('.gltf') ? (
+                  <model-viewer src={sender.avatar} camera-controls auto-rotate interaction-prompt="none" style={{width:'100%',height:'100%'}}></model-viewer>
+                ) : <img src={sender.avatar} className="w-full h-full object-cover" />
+              ) : (sender?.nickname?.[0] || '?')}
             </div>
           )}
           

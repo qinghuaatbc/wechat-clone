@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -63,6 +64,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		Nickname: req.Nickname,
 		Password: string(hashedPw),
 		Gender:   req.Gender,
+		Avatar:   fmt.Sprintf("https://api.dicebear.com/7.x/adventurer/svg?seed=%s&backgroundColor=b6e3f4,c0aede,d1d4f9", wxid),
 	}
 
 	if err := h.DB.Create(&user).Error; err != nil {
