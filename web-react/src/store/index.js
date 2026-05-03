@@ -32,6 +32,7 @@ export const useStore = create((set, get) => ({
   user: JSON.parse(localStorage.getItem('user') || 'null'),
   friends: [],
   groups: [],
+  allUsers: [],
   groupMembers: {},
   messages: {},
   unread: {},
@@ -128,6 +129,20 @@ export const useStore = create((set, get) => ({
       const res = await api.get('/groups')
       set({ groups: res.data.groups || [] })
     } catch (e) { set({ groups: [] }) }
+  },
+
+  fetchAllUsers: async () => {
+    try {
+      const res = await api.get('/friends/all')
+      set({ allUsers: res.data.users || [] })
+    } catch (e) { set({ allUsers: [] }) }
+  },
+
+  createGroup: async (name, memberIds) => {
+    try {
+      await api.post('/groups', { name, member_ids: memberIds })
+      get().fetchGroups()
+    } catch (e) { toast.error('创建群聊失败') }
   },
 
   fetchGroupMembers: async (groupId) => {

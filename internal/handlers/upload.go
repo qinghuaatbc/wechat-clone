@@ -51,6 +51,7 @@ func detectFileType(filename string) string {
 	imageExts := map[string]bool{".jpg": true, ".jpeg": true, ".png": true, ".gif": true, ".webp": true, ".bmp": true}
 	audioExts := map[string]bool{".mp3": true, ".wav": true, ".ogg": true, ".flac": true, ".aac": true, ".m4a": true}
 	docExts := map[string]bool{".pdf": true, ".doc": true, ".docx": true, ".xls": true, ".xlsx": true, ".ppt": true, ".pptx": true, ".txt": true, ".csv": true, ".zip": true, ".rar": true, ".7z": true}
+	model3dExts := map[string]bool{".glb": true, ".gltf": true, ".obj": true, ".stl": true, ".fbx": true}
 
 	if videoExts[ext] {
 		return "video"
@@ -60,6 +61,9 @@ func detectFileType(filename string) string {
 	}
 	if audioExts[ext] {
 		return "audio"
+	}
+	if model3dExts[ext] {
+		return "3d-model"
 	}
 	if docExts[ext] {
 		return "file"

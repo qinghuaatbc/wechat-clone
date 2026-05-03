@@ -6,10 +6,12 @@ import { motion, AnimatePresence } from 'framer-motion'
 export default function Contacts() {
   const friends = useStore(s => s.friends)
   const groups = useStore(s => s.groups)
+  const allUsers = useStore(s => s.allUsers || [])
   const searchUser = useStore(s => s.searchUser)
   const addFriend = useStore(s => s.addFriend)
   const fetchFriends = useStore(s => s.fetchFriends)
   const fetchGroups = useStore(s => s.fetchGroups)
+  const fetchAllUsers = useStore(s => s.fetchAllUsers)
   const incomingRequests = useStore(s => s.incomingRequests)
   const pendingRequestCount = useStore(s => s.pendingRequestCount)
   const acceptRequest = useStore(s => s.acceptRequest)
@@ -17,6 +19,7 @@ export default function Contacts() {
   const fetchFriendRequests = useStore(s => s.fetchFriendRequests)
   const recommendUsers = useStore(s => s.recommendUsers)
   const fetchRecommend = useStore(s => s.fetchRecommend)
+  const createGroup = useStore(s => s.createGroup)
   const currentUser = useStore(s => s.user)
 
   const [activeTab, setActiveTab] = useState('friends')
@@ -25,13 +28,35 @@ export default function Contacts() {
   const [showRequests, setShowRequests] = useState(false)
   const [showAddModal, setShowAddModal] = useState(null)
   const [addMessage, setAddMessage] = useState('')
+  const [showCreateGroup, setShowCreateGroup] = useState(false)
+  const [groupName, setGroupName] = useState('')
+  const [selectedMembers, setSelectedMembers] = useState([])
 
   useEffect(() => {
     fetchFriends()
     fetchGroups()
+    fetchAllUsers()
     fetchFriendRequests()
     fetchRecommend()
   }, [])
+
+  const handleCreateGroup = async () => {
+    if (!groupName.trim() || selectedMembers.length === 0) {
+      toast.error('请输入群名并选择成员')
+      return
+    }
+    await createGroup(groupName, selectedMembers)
+    setShowCreateGroup(false)
+    setGroupName('')
+    setSelectedMembers([])
+    toast.success('群聊已创建')
+  }
+
+  const toggleMember = (userId) => {
+    setSelectedMembers(prev => 
+      prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]
+    )
+  }
 
   const handleSearch = async () => {
     if (!keyword.trim()) return
@@ -115,6 +140,12 @@ export default function Contacts() {
           className={`flex-1 py-3 text-sm font-medium transition-colors ${activeTab === 'groups' ? 'text-wechat-green border-b-2 border-wechat-green' : 'text-wechat-gray'}`}
         >
           <MessageSquare size={16} className="inline mr-1" />群聊
+        </button>
+        <button
+          onClick={() => setActiveTab('all-users')}
+          className={`flex-1 py-3 text-sm font-medium transition-colors ${activeTab === 'all-users' ? 'text-wechat-green border-b-2 border-wechat-green' : 'text-wechat-gray'}`}
+        >
+          <UserPlus size={16} className="inline mr-1" />所有用户
         </button>
       </div>
 
@@ -259,8 +290,11 @@ export default function Contacts() {
       {/* 群聊列表 */}
       {activeTab === 'groups' && !keyword && (
         <div className="mt-2">
-          <div className="px-4 py-2 text-sm text-wechat-gray bg-wechat-bg">
-            我的群聊
+          <div className="px-4 py-2 text-sm text-wechat-gray bg-wechat-bg flex justify-between items-center">
+            <span>我的群聊</span>
+            <button onClick={() => setShowCreateGroup(true)} className="text-wechat-green text-xs font-medium">
+              + 新建群聊
+            </button>
           </div>
           {groups.length > 0 ? (
             groups.map(g => (
@@ -279,9 +313,41 @@ export default function Contacts() {
           ) : (
             <div className="flex flex-col items-center justify-center py-20 text-wechat-gray">
               <p className="text-lg mb-2">暂无群聊</p>
-              <p className="text-sm">通过聊天界面创建或加入群聊</p>
+              <p className="text-sm">点击上方+新建群聊</p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* 所有用户列表 */}
+      {activeTab === 'all-users' && !keyword && (
+        <div className="mt-2">
+          <div className="px-4 py-2 text-sm text-wechat-gray bg-wechat-bg">
+            所有用户 ({allUsers.length})
+          </div>
+          {allUsers.map(u => (
+            <div key={u.id} className="flex items-center p-4 bg-white border-b border-wechat-border">
+              <div className="w-10 h-10 rounded-lg bg-wechat-green/20 flex items-center justify-center text-wechat-green font-bold flex-shrink-0 overflow-hidden">
+                {u.avatar ? <img src={u.avatar} className="w-full h-full object-cover" /> : (u.nickname?.[0] || '?')}
+              </div>
+              <div className="ml-3 flex-1">
+                <p className="font-medium text-wechat-dark">{u.nickname}</p>
+                <p className="text-xs text-wechat-gray">微信号: {u.wxid}</p>
+              </div>
+              {u.is_friend ? (
+                <span className="px-3 py-1 bg-wechat-bg text-wechat-gray rounded-full text-xs">
+                  已是好友
+                </span>
+              ) : (
+                <button
+                  onClick={() => handleAddClick(u)}
+                  className="px-4 py-1.5 bg-wechat-green text-white rounded-full text-sm hover:opacity-90"
+                >
+                  加好友
+                </button>
+              )}
+            </div>
+          ))}
         </div>
       )}
 
@@ -329,6 +395,68 @@ export default function Contacts() {
                 </button>
                 <button onClick={handleSendRequest} className="flex-1 py-2.5 bg-wechat-green text-white rounded-lg font-medium active:scale-95 transition">
                   发送
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Create Group Modal */}
+      <AnimatePresence>
+        {showCreateGroup && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-6"
+            onClick={() => setShowCreateGroup(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl w-full max-w-sm p-6 max-h-[80vh] overflow-y-auto"
+              onClick={e => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-bold mb-4">新建群聊</h3>
+              
+              <label className="text-sm text-wechat-gray mb-1 block">群名称</label>
+              <input
+                type="text"
+                value={groupName}
+                onChange={e => setGroupName(e.target.value)}
+                placeholder="请输入群名称"
+                className="w-full p-3 bg-wechat-bg rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-wechat-green/50 mb-4"
+              />
+
+              <p className="text-sm text-wechat-gray mb-2">选择成员（{selectedMembers.length}人）</p>
+              <div className="space-y-2 mb-4">
+                {allUsers.filter(u => !u.is_friend).map(u => (
+                  <div 
+                    key={u.id} 
+                    onClick={() => toggleMember(u.id)}
+                    className={`flex items-center p-3 rounded-lg cursor-pointer transition-colors ${selectedMembers.includes(u.id) ? 'bg-wechat-green/10' : 'bg-wechat-bg'}`}
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-wechat-green/20 flex items-center justify-center text-wechat-green font-bold text-sm mr-3">
+                      {u.avatar ? <img src={u.avatar} className="w-full h-full rounded-lg object-cover" /> : (u.nickname?.[0] || '?')}
+                    </div>
+                    <span className="flex-1 text-sm">{u.nickname}</span>
+                    {selectedMembers.includes(u.id) && (
+                      <div className="w-5 h-5 rounded-full bg-wechat-green flex items-center justify-center">
+                        <Check size={12} className="text-white" />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex gap-2">
+                <button onClick={() => { setShowCreateGroup(false); setSelectedMembers([]); setGroupName('') }} className="flex-1 py-2.5 bg-wechat-bg rounded-lg font-medium text-wechat-dark active:scale-95 transition">
+                  取消
+                </button>
+                <button onClick={handleCreateGroup} className="flex-1 py-2.5 bg-wechat-green text-white rounded-lg font-medium active:scale-95 transition">
+                  创建（{selectedMembers.length}人）
                 </button>
               </div>
             </motion.div>

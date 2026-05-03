@@ -65,6 +65,15 @@ type SendMsgReq struct {
 	FileSize     int64     `json:"file_size"`
 }
 
+const (
+	MsgTypeText       = 1
+	MsgTypeImage      = 3
+	MsgTypeVideo      = 4
+	MsgTypeFile       = 5
+	MsgType3DModel    = 6
+	MsgTypeAudio      = 7
+)
+
 func (h *MessageHandler) SendMessage(c *gin.Context) {
 	userID := getUserID(c)
 	var req SendMsgReq

@@ -118,6 +118,7 @@ export default function ChatWindow() {
   const videoInputRef = useRef(null)
   const fileInputRef = useRef(null)
   const imageInputRef = useRef(null)
+  const model3dRef = useRef(null)
 
   const friend = isFileHelper ? { nickname: '文件传输助手' } : (friends.find(f => f.id === id) || { nickname: '未知用户' })
 
@@ -222,6 +223,14 @@ export default function ChatWindow() {
     if (!file) return
     setShowAttachMenu(false)
     await uploadAndSend(file, isFileHelper ? user.id : id, 5)
+    e.target.value = ''
+  }
+
+  const handle3DModelUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setShowAttachMenu(false)
+    await uploadAndSend(file, isFileHelper ? user.id : id, 6)
     e.target.value = ''
   }
 
@@ -341,7 +350,7 @@ export default function ChatWindow() {
                   <p className="text-sm font-medium truncate dark:text-white">{msg.file_name || '文件'}</p>
                   <p className="text-xs text-wechat-gray">{formatFileSize(msg.file_size)}</p>
                 </div>
-                <a href={msg.content} download={msg.file_name} className="p-1.5 rounded-full hover:bg-wechat-bg dark:hover:bg-gray-700 transition">
+                <a href={msg.content} download={msg.file_name} className="p-1.5 rounded-full hover:bg-wechat-bg dark:hover:bg-gray-700 transition" title="下载">
                   <Download size={18} className="text-wechat-green" />
                 </a>
               </div>
@@ -354,7 +363,7 @@ export default function ChatWindow() {
                   style={{ width: '200px', height: '200px', background: '#1a1a2e' }}
                   className="rounded-lg"
                 ></model-viewer>
-                <a href={msg.content} download={msg.file_name} className="absolute top-2 right-2 p-1.5 bg-black/60 text-white rounded-full opacity-0 hover:opacity-100 transition" title="下载">
+                <a href={msg.content} download={msg.file_name} className="absolute top-2 right-2 p-1.5 bg-black/60 text-white rounded-full hover:bg-black/80 transition" title="下载">
                   <Download size={16} />
                 </a>
               </div>
@@ -450,6 +459,10 @@ export default function ChatWindow() {
                     <FileText size={18} className="text-wechat-blue" />
                     <span className="text-sm dark:text-wechat-darkText">文件</span>
                   </button>
+                  <button onClick={() => openFilePicker(model3dRef)} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-wechat-bg dark:hover:bg-gray-800 transition">
+                    <File size={18} className="text-purple-500" />
+                    <span className="text-sm dark:text-wechat-darkText">3D模型</span>
+                  </button>
                   <button onClick={() => openFilePicker(imageInputRef)} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-wechat-bg dark:hover:bg-gray-800 transition">
                     <Image size={18} className="text-wechat-green" />
                     <span className="text-sm dark:text-wechat-darkText">图片</span>
@@ -498,6 +511,7 @@ export default function ChatWindow() {
         {/* Hidden file inputs */}
         <input ref={videoInputRef} type="file" accept="video/*" className="absolute -top-full -left-full opacity-0 pointer-events-none" onChange={handleVideoUpload} />
         <input ref={fileInputRef} type="file" className="absolute -top-full -left-full opacity-0 pointer-events-none" onChange={handleFileUpload} />
+        <input ref={model3dRef} type="file" accept=".glb,.gltf,.obj,.stl,.fbx" className="absolute -top-full -left-full opacity-0 pointer-events-none" onChange={handle3DModelUpload} />
         <input ref={imageInputRef} type="file" accept="image/*" className="absolute -top-full -left-full opacity-0 pointer-events-none" onChange={handleImageUpload} />
 
         {/* Image Preview */}

@@ -424,3 +424,42 @@ func (h *FriendHandler) QRCodeAddFriend(c *gin.Context) {
 	h.DB.Create(&models.FriendRequest{FromID: userID, ToID: target.ID, Message: msg, Status: models.RequestPending})
 	c.JSON(http.StatusOK, gin.H{"message": "request sent"})
 }
+
+type AllUser struct {
+	ID       uuid.UUID `json:"id"`
+	Wxid     string    `json:"wxid"`
+	Nickname string    `json:"nickname"`
+	Avatar   string    `json:"avatar"`
+	Phone    string    `json:"phone"`
+	IsFriend bool      `json:"is_friend"`
+}
+
+func (h *FriendHandler) GetAllUsers(c *gin.Context) {
+	userID := getUserID(c)
+
+	var users []models.User
+	h.DB.Where("id != ?", userID).Find(&users)
+
+	var friendIDs []uuid.UUID
+	h.DB.Model(&models.Friendship{}).
+		Where("user_id = ? AND status = ?", userID, 1).
+		Pluck("friend_id", &friendIDs)
+	friendMap := make(map[uuid.UUID]bool)
+	for _, id := range friendIDs {
+		friendMap[id] = true
+	}
+
+	var results []AllUser
+	for _, u := range users {
+		results = append(results, AllUser{
+			ID:       u.ID,
+			Wxid:     u.Wxid,
+			Nickname: u.Nickname,
+			Avatar:   u.Avatar,
+			Phone:    u.Phone,
+			IsFriend: friendMap[u.ID],
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"users": results})
+}
