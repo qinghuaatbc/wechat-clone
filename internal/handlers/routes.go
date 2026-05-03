@@ -51,6 +51,8 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *services.RedisService, hub *
 	adminH := NewAdminHandler(db)
 
 	libraryH := NewLibraryHandler(db)
+	albumH := NewAlbumHandler(db)
+	examH := NewExamHandler(db)
 	auth := middleware.AuthMiddleware(jwtSecret)
 
 	r.Use(middleware.RateLimit())
@@ -67,6 +69,8 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *services.RedisService, hub *
 		api.GET("/library", libraryH.ListPublic)
 		api.GET("/library/categories", libraryH.GetCategories)
 		api.GET("/library/:id/download", libraryH.Download)
+		api.GET("/exams", examH.ListExams)
+		api.GET("/exams/categories", examH.GetCategories)
 
 		protected := api.Group("", auth)
 		{
@@ -95,6 +99,20 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *services.RedisService, hub *
 			protected.GET("/groups/:id/members", groupH.GetMembers)
 			protected.POST("/groups/:id/members", groupH.AddMembers)
 			protected.DELETE("/groups/:id", groupH.DeleteGroup)
+
+			protected.GET("/album", albumH.ListMyPhotos)
+			protected.POST("/album/upload", albumH.UploadPhoto)
+			protected.POST("/album/share", albumH.SharePhoto)
+			protected.GET("/album/shared", albumH.GetSharedWithMe)
+			protected.DELETE("/album/share/:id", albumH.UnsharePhoto)
+			protected.DELETE("/album/:id", albumH.DeletePhoto)
+
+			protected.GET("/exams/:id", examH.GetExam)
+			protected.POST("/exams/:id/start", examH.StartAttempt)
+			protected.POST("/exams/:id/submit", examH.SubmitAttempt)
+			protected.POST("/exams/:id/peek", examH.PeekAttempt)
+			protected.GET("/exams/history/all", examH.GetHistory)
+			protected.GET("/exams/attempt/:id", examH.GetAttempt)
 
 			protected.POST("/moments", momentH.Create)
 			protected.GET("/moments", momentH.GetFeed)
@@ -133,6 +151,11 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *services.RedisService, hub *
 		admin.POST("/library", libraryH.AdminUpload)
 		admin.PUT("/library/:id", libraryH.AdminUpdate)
 		admin.DELETE("/library/:id", libraryH.AdminDelete)
+		admin.GET("/exams", examH.AdminList)
+		admin.POST("/exams", examH.AdminCreate)
+		admin.POST("/exams/ai-generate", examH.AdminGenerate)
+		admin.PUT("/exams/:id", examH.AdminUpdate)
+		admin.DELETE("/exams/:id", examH.AdminDelete)
 	}
 
 	// Serve React production build (if exists)
@@ -144,7 +167,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *services.RedisService, hub *
 			c.File("./web-react/dist/index.html")
 		})
 		r.Static("/assets", "./web-react/dist/assets")
- 	r.Static("/cloud-files", "./uploads/cloud")
+ 			r.Static("/cloud-files", "./uploads/cloud")
 		r.GET("/uploads/*filepath", func(c *gin.Context) {
 			serveFile(c, uploadH.UploadDir, c.Param("filepath"))
 		})

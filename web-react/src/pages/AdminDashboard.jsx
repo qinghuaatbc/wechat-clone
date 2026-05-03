@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Users, MessageSquare, Tv, HardDrive, Trash2, Plus, LogOut, BookOpen, Pencil, Search, X, BarChart3, ChevronLeft, User, Shield, FileText, Video, Download } from 'lucide-react'
+import { Users, MessageSquare, Tv, HardDrive, Trash2, Plus, LogOut, BookOpen, Pencil, Search, X, BarChart3, ChevronLeft, User, Shield, FileText, Video, Download, BrainCircuit, Sparkles } from 'lucide-react'
 
 const api = async (url, opts = {}) => {
   const res = await fetch(url, {
@@ -87,12 +87,22 @@ export default function AdminDashboard() {
   const [libCat, setLibCat] = useState('')
   const [libFile, setLibFile] = useState(null)
 
+  const [exams, setExams] = useState([])
+  const [showAIGen, setShowAIGen] = useState(false)
+  const [aiTopic, setAiTopic] = useState('')
+  const [aiCat, setAiCat] = useState('')
+  const [aiSub, setAiSub] = useState('')
+  const [aiDifficulty, setAiDifficulty] = useState(1)
+  const [aiCount, setAiCount] = useState(5)
+  const [aiGenerating, setAiGenerating] = useState(false)
+
   useEffect(() => {
     if (tab === 'users') api('/api/admin/users').then(d => setUsers(d.users || [])).catch(() => navigate('/admin'))
     if (tab === 'groups') api('/api/admin/groups').then(d => setGroups(d.groups || [])).catch(() => navigate('/admin'))
     if (tab === 'hls') api('/api/admin/hls').then(d => setChannels(d.channels || [])).catch(() => navigate('/admin'))
     if (tab === 'files') api('/api/admin/files').then(d => setFiles(d.files || [])).catch(() => navigate('/admin'))
     if (tab === 'library') api('/api/admin/library').then(d => setLibItems(d.items || [])).catch(() => navigate('/admin'))
+    if (tab === 'exams') api('/api/admin/exams').then(d => setExams(d.exams || [])).catch(() => navigate('/admin'))
   }, [tab])
 
   const delUser = async (id) => {
@@ -119,6 +129,21 @@ export default function AdminDashboard() {
     if (!confirm('确定删除该资源？')) return
     await api(`/api/admin/library/${id}`, { method: 'DELETE' })
     setLibItems(libItems.filter(i => i.id !== id))
+  }
+  const delExam = async (id) => {
+    if (!confirm('确定删除该考试？')) return
+    await api(`/api/admin/exams/${id}`, { method: 'DELETE' })
+    setExams(exams.filter(e => e.id !== id))
+  }
+  const aiGenerate = async () => {
+    if (!aiTopic.trim() || !aiCat.trim()) return
+    setAiGenerating(true)
+    try {
+      const d = await api('/api/admin/exams/ai-generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ topic: aiTopic, category: aiCat, sub_category: aiSub, difficulty: aiDifficulty, count: aiCount }) })
+      setExams([...(d.exam ? [d.exam] : []), ...exams])
+      setShowAIGen(false); setAiTopic(''); setAiCat(''); setAiSub(''); setAiDifficulty(1); setAiCount(5)
+    } catch (e) { alert('生成失败: ' + e.message) }
+    setAiGenerating(false)
   }
 
   const addHLS = async () => {
@@ -159,6 +184,7 @@ export default function AdminDashboard() {
     { id: 'hls', label: '直播频道', icon: Tv },
     { id: 'files', label: '文件管理', icon: HardDrive },
     { id: 'library', label: '图书馆', icon: BookOpen },
+    { id: 'exams', label: 'AI考试', icon: BrainCircuit },
   ]
 
   const filteredUsers = users.filter(u =>
@@ -411,6 +437,30 @@ export default function AdminDashboard() {
               />
             </div>
           )}
+          {tab === 'exams' && (
+            <div>
+              <button onClick={() => setShowAIGen(true)} className="mb-4 px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl text-sm font-medium hover:shadow-lg hover:shadow-purple-500/20 transition-all flex items-center gap-2">
+                <Sparkles size={16} /> AI生成考试
+              </button>
+              <Table
+                headers={['标题', '分类', '难度', '题数', '操作']}
+                emptyText="暂无考试，点击上方按钮用AI生成"
+                rows={exams.filter(e => (e.title && e.title.includes(searchTerm)) || (e.category && e.category.includes(searchTerm))).map(exam => (
+                  <tr key={exam.id} className="hover:bg-gray-800/50 transition-colors">
+                    <td className="px-4 py-3 font-medium text-white">{exam.title}</td>
+                    <td className="px-4 py-3">
+                      <span className="bg-purple-500/10 text-purple-400 text-xs px-2 py-0.5 rounded-full">{exam.category}</span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-400 text-xs">{['简单','中等','困难'][exam.difficulty-1] || '未知'}</td>
+                    <td className="px-4 py-3 text-gray-400 text-xs">{exam.question_cnt}题</td>
+                    <td className="px-4 py-3">
+                      <button onClick={() => delExam(exam.id)} className="text-red-400 hover:text-red-300 hover:bg-red-400/10 p-1.5 rounded-lg transition-colors" title="删除"><Trash2 size={15} /></button>
+                    </td>
+                  </tr>
+                ))}
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -485,6 +535,37 @@ export default function AdminDashboard() {
             className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 text-white rounded-xl text-sm focus:outline-none focus:border-wechat-green/50 mb-5" />
           <button onClick={editLib} className="w-full py-3 bg-gradient-to-r from-wechat-green to-emerald-600 text-white rounded-xl text-sm font-medium hover:shadow-lg transition-all">
             保存修改
+          </button>
+        </Modal>
+      )}
+
+      {showAIGen && (
+        <Modal title="AI 生成考试" onClose={() => setShowAIGen(false)}>
+          <input value={aiTopic} onChange={e => setAiTopic(e.target.value)} placeholder="考试主题 (如: Go语言并发编程)" autoFocus
+            className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 text-white rounded-xl text-sm focus:outline-none focus:border-purple-500/50 mb-3" />
+          <input value={aiCat} onChange={e => setAiCat(e.target.value)} placeholder="类别 (如: 编程/英语/数学)"
+            className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 text-white rounded-xl text-sm focus:outline-none focus:border-purple-500/50 mb-3" />
+          <input value={aiSub} onChange={e => setAiSub(e.target.value)} placeholder="子类别 (可选)"
+            className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 text-white rounded-xl text-sm focus:outline-none focus:border-purple-500/50 mb-3" />
+          <div className="flex gap-3 mb-5">
+            <div className="flex-1">
+              <label className="block text-gray-400 text-xs mb-1">难度</label>
+              <select value={aiDifficulty} onChange={e => setAiDifficulty(parseInt(e.target.value))}
+                className="w-full px-3 py-3 bg-gray-700/50 border border-gray-600 text-white rounded-xl text-sm focus:outline-none">
+                <option value={1}>简单</option>
+                <option value={2}>中等</option>
+                <option value={3}>困难</option>
+              </select>
+            </div>
+            <div className="flex-1">
+              <label className="block text-gray-400 text-xs mb-1">题目数量</label>
+              <input type="number" min={1} max={20} value={aiCount} onChange={e => setAiCount(parseInt(e.target.value))}
+                className="w-full px-3 py-3 bg-gray-700/50 border border-gray-600 text-white rounded-xl text-sm focus:outline-none" />
+            </div>
+          </div>
+          <button onClick={aiGenerate} disabled={aiGenerating}
+            className="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl text-sm font-medium hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+            {aiGenerating ? <><span className="animate-spin">⟳</span> AI生成中...</> : <><Sparkles size={16} /> AI生成</>}
           </button>
         </Modal>
       )}

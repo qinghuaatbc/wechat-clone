@@ -8,6 +8,11 @@ import GroupChatWindow from './pages/GroupChatWindow'
 import TV from './pages/TV'
 import CloudDisk from './pages/CloudDisk'
 import Library from './pages/Library'
+import Music from './pages/Music'
+import Album from './pages/Album'
+import ExamList from './pages/ExamList'
+import ExamTake from './pages/ExamTake'
+import ExamHistory from './pages/ExamHistory'
 import AdminLogin from './pages/AdminLogin'
 import AdminDashboard from './pages/AdminDashboard'
 
@@ -37,6 +42,11 @@ export default function App() {
             <Route path="/tv" element={<TV />} />
             <Route path="/cloud" element={<CloudDisk />} />
             <Route path="/library" element={<Library />} />
+            <Route path="/music" element={<Music />} />
+            <Route path="/album" element={<Album />} />
+            <Route path="/exam" element={<ExamList />} />
+            <Route path="/exam/:id" element={<ExamTake />} />
+            <Route path="/exam/history" element={<ExamHistory />} />
           </Routes>
         </PrivateRoute>
       } />

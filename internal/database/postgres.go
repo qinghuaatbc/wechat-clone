@@ -35,6 +35,11 @@ func Connect(cfg *config.Config) {
 		&models.CloudFile{},
 		&models.HLSChannel{},
 		&models.LibraryItem{},
+		&models.PhotoShare{},
+		&models.Exam{},
+		&models.ExamQuestion{},
+		&models.ExamAttempt{},
+		&models.ExamAnswer{},
 	); err != nil {
 		log.Fatal("failed to migrate database:", err)
 	}

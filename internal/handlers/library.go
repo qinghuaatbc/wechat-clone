@@ -95,8 +95,8 @@ func (h *LibraryHandler) AdminUpload(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "no file"})
 		return
 	}
-	if file.Size > 200*1024*1024 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "file too large, max 200MB"})
+	if file.Size > 300*1024*1024 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "file too large, max 300MB"})
 		return
 	}
 	ext := filepath.Ext(file.Filename)
