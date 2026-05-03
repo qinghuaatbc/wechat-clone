@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, Fragment, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Send, Image, Loader2, Check, CheckCheck, Copy, CornerDownRight, RotateCcw, Smile, Users, UserPlus, X, Video, FileText, File, ChevronUp, Download, Trash2 } from 'lucide-react'
+import { ArrowLeft, Send, Image, Loader2, Check, CheckCheck, Copy, CornerDownRight, RotateCcw, Smile, Users, UserPlus, X, Video, FileText, File, ChevronUp, Download, Trash2, Monitor } from 'lucide-react'
 import { useStore } from '../store'
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -76,6 +76,7 @@ export default function GroupChatWindow() {
   const loadMessages = useStore(s => s.loadGroupMessages)
   const fetchGroupMembers = useStore(s => s.fetchGroupMembers)
   const setPreviewImage = useStore(s => s.setPreviewImage)
+  const previewImage = useStore(s => s.previewImage)
   const loading = useStore(s => s.loading)
 
   const [input, setInput] = useState('')
@@ -91,6 +92,7 @@ export default function GroupChatWindow() {
   const videoInputRef = useRef(null)
   const fileInputRef = useRef(null)
   const imageInputRef = useRef(null)
+  const model3dRef = useRef(null)
 
   const group = groups.find(g => g.id === groupId) || { name: '未知群聊' }
 
@@ -98,6 +100,15 @@ export default function GroupChatWindow() {
     if (!user?.id || !groupId) return
     loadMessages(groupId)
     fetchGroupMembers(groupId)
+    const ws = useStore.getState().ws
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ action: 'join_group', group_id: groupId }))
+    }
+    return () => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ action: 'leave_group', group_id: groupId }))
+      }
+    }
   }, [groupId, loadMessages, fetchGroupMembers, user?.id])
 
   const sendTextMessage = async () => {
@@ -203,6 +214,14 @@ export default function GroupChatWindow() {
     if (!file) return
     setShowAttachMenu(false)
     await uploadAndSend(file, groupId, 5)
+    e.target.value = ''
+  }
+
+  const handle3DModelUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setShowAttachMenu(false)
+    await uploadAndSend(file, groupId, 6)
     e.target.value = ''
   }
 
@@ -335,13 +354,13 @@ export default function GroupChatWindow() {
                 className="relative cursor-pointer" 
                 onClick={() => setPreviewImage(msg.content)}
               >
-                <model-viewer 
-                  src={msg.content} 
-                  camera-controls 
-                  auto-rotate 
-                  style={{ width: '200px', height: '200px', background: '#1a1a2e' }}
-                  className="rounded-lg pointer-events-none"
-                ></model-viewer>
+                  <model-viewer 
+                    src={msg.content} 
+                    camera-controls 
+                    auto-rotate 
+                    style={{ width: '200px', height: '200px', background: '#1a1a2e' }}
+                    className="rounded-lg"
+                  ></model-viewer>
                 <a href={msg.content} download={msg.file_name} className="absolute top-2 right-2 p-1.5 bg-black/60 text-white rounded-full hover:bg-black/80 transition" title="下载" onClick={e => e.stopPropagation()}>
                   <Download size={16} />
                 </a>
@@ -435,10 +454,14 @@ export default function GroupChatWindow() {
                   <Video size={18} className="text-wechat-green" />
                   <span className="text-sm dark:text-wechat-darkText">视频</span>
                 </button>
-                <button onClick={() => openFilePicker(fileInputRef)} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-wechat-bg dark:hover:bg-gray-800 transition">
-                  <FileText size={18} className="text-wechat-blue" />
-                  <span className="text-sm dark:text-wechat-darkText">文件</span>
-                </button>
+                  <button onClick={() => openFilePicker(fileInputRef)} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-wechat-bg dark:hover:bg-gray-800 transition">
+                    <FileText size={18} className="text-wechat-blue" />
+                    <span className="text-sm dark:text-wechat-darkText">文件</span>
+                  </button>
+                  <button onClick={() => openFilePicker(model3dRef)} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-wechat-bg dark:hover:bg-gray-800 transition">
+                    <Monitor size={18} className="text-purple-500" />
+                    <span className="text-sm dark:text-wechat-darkText">3D模型</span>
+                  </button>
                 <button onClick={() => openFilePicker(imageInputRef)} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-wechat-bg dark:hover:bg-gray-800 transition">
                   <Image size={18} className="text-wechat-green" />
                   <span className="text-sm dark:text-wechat-darkText">图片</span>
@@ -468,6 +491,7 @@ export default function GroupChatWindow() {
       {/* Hidden file inputs */}
       <input ref={videoInputRef} type="file" accept="video/*" className="absolute -top-full -left-full opacity-0 pointer-events-none" onChange={handleVideoUpload} />
       <input ref={fileInputRef} type="file" className="absolute -top-full -left-full opacity-0 pointer-events-none" onChange={handleFileUpload} />
+      <input ref={model3dRef} type="file" accept=".glb,.gltf,.obj,.stl,.fbx" className="absolute -top-full -left-full opacity-0 pointer-events-none" onChange={handle3DModelUpload} />
       <input ref={imageInputRef} type="file" accept="image/*" className="absolute -top-full -left-full opacity-0 pointer-events-none" onChange={handleImageUpload} />
 
       {/* Context Menu */}
@@ -527,14 +551,21 @@ export default function GroupChatWindow() {
         )}
       </AnimatePresence>
 
-      {/* Image Preview */}
-      <AnimatePresence>
-        {useStore.getState().previewImage && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center" onClick={() => setPreviewImage(null)}>
-            <motion.img initial={{ scale: 0.8 }} animate={{ scale: 1 }} exit={{ scale: 0.8 }} src={useStore.getState().previewImage} alt="Preview" className="max-w-full max-h-full object-contain" />
-          </motion.div>
-        )}
-      </AnimatePresence>
+        {/* Image/3D Preview */}
+        <AnimatePresence>
+          {previewImage && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center" onClick={() => setPreviewImage(null)}>
+              <button onClick={() => setPreviewImage(null)} className="absolute top-4 right-4 z-10 w-10 h-10 bg-black/60 text-white rounded-full flex items-center justify-center text-xl hover:bg-black/80 transition">✕</button>
+              {previewImage.endsWith('.glb') || previewImage.endsWith('.gltf') ? (
+                <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} exit={{ scale: 0.8 }} onClick={e => e.stopPropagation()}>
+                  <model-viewer src={previewImage} camera-controls auto-rotate style={{ width: '90vw', height: '80vh' }} className="rounded-lg"></model-viewer>
+                </motion.div>
+              ) : (
+                <motion.img initial={{ scale: 0.8 }} animate={{ scale: 1 }} exit={{ scale: 0.8 }} src={previewImage} alt="Preview" className="max-w-full max-h-full object-contain" />
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
     </div>
   )
 }
