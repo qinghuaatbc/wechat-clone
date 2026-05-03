@@ -325,7 +325,7 @@ export default function ChatWindow() {
                   <div className="w-8 h-8 rounded-full bg-wechat-green/20 flex items-center justify-center text-wechat-green text-sm font-bold flex-shrink-0 overflow-hidden">
                     {user?.avatar ? (
                       user.avatar.endsWith('.glb') || user.avatar.endsWith('.gltf') ? (
-                        <model-viewer src={user.avatar} camera-controls auto-rotate interaction-prompt="none" style={{width:'100%',height:'100%'}}></model-viewer>
+                        <model-viewer src={user.avatar} camera-controls auto-rotate rotation-per-second="120" interaction-prompt="none" style={{width:'100%',height:'100%'}}></model-viewer>
                       ) : <img src={user.avatar} className="w-full h-full object-cover" />
                     ) : (user?.nickname?.[0] || '?')}
                   </div>
@@ -333,7 +333,7 @@ export default function ChatWindow() {
                   <div className="w-8 h-8 rounded-full bg-wechat-green/20 flex items-center justify-center text-wechat-green text-sm font-bold flex-shrink-0 overflow-hidden">
                     {friend.avatar ? (
                       friend.avatar.endsWith('.glb') || friend.avatar.endsWith('.gltf') ? (
-                        <model-viewer src={friend.avatar} camera-controls auto-rotate interaction-prompt="none" style={{width:'100%',height:'100%'}}></model-viewer>
+                        <model-viewer src={friend.avatar} camera-controls auto-rotate rotation-per-second="120" interaction-prompt="none" style={{width:'100%',height:'100%'}}></model-viewer>
                       ) : <img src={friend.avatar} className="w-full h-full object-cover" />
                     ) : (friend.nickname?.[0] || '?')}
                   </div>
@@ -379,7 +379,7 @@ export default function ChatWindow() {
                 <model-viewer 
                   src={msg.content} 
                   camera-controls 
-                  auto-rotate 
+                  auto-rotate rotation-per-second="120" 
                   style={{ width: '200px', height: '200px', background: '#1a1a2e' }}
                   className="rounded-lg"
                 ></model-viewer>
@@ -537,7 +537,7 @@ export default function ChatWindow() {
                   <model-viewer 
                     src={previewImage} 
                     camera-controls 
-                    auto-rotate 
+                    auto-rotate rotation-per-second="120" 
                     style={{ width: '90vw', height: '80vh' }}
                     className="rounded-lg"
                   ></model-viewer>

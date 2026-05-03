@@ -185,7 +185,7 @@ export default function Contacts() {
             {incomingRequests.map(req => (
               <div key={req.id} className="flex items-center p-3 border-b border-wechat-border">
                 <div className="w-10 h-10 rounded-lg bg-wechat-green/20 flex items-center justify-center text-wechat-green font-bold flex-shrink-0">
-                  {(()=>{const a=req.from_avatar;if(a&&(a.endsWith(".glb")||a.endsWith(".gltf")))return <model-viewer src={a} camera-controls auto-rotate interaction-prompt="none" style={{width:"100%",height:"100%"}}></model-viewer>;return a?<img src={a} className="w-full h-full rounded-lg object-cover"/>:(req.from_name?.[0]||"?")})()}
+                  {(()=>{const a=req.from_avatar;if(a&&(a.endsWith(".glb")||a.endsWith(".gltf")))return <model-viewer src={a} camera-controls auto-rotate rotation-per-second="120" interaction-prompt="none" style={{width:"100%",height:"100%"}}></model-viewer>;return a?<img src={a} className="w-full h-full rounded-lg object-cover"/>:(req.from_name?.[0]||"?")})()}
                 </div>
                 <div className="ml-3 flex-1 min-w-0">
                   <p className="font-medium text-sm truncate">{req.from_name}</p>
@@ -260,7 +260,7 @@ export default function Contacts() {
               <div key={u.id} className="flex items-center p-4 justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-wechat-green/20 flex items-center justify-center text-wechat-green font-bold flex-shrink-0 overflow-hidden">
-                    {(()=>{const a=u.avatar;if(a&&(a.endsWith(".glb")||a.endsWith(".gltf")))return <model-viewer src={a} camera-controls auto-rotate interaction-prompt="none" style={{width:"100%",height:"100%"}}></model-viewer>;return a?<img src={a} className="w-full h-full object-cover"/>:(u.nickname?.[0]||"?")})()}
+                    {(()=>{const a=u.avatar;if(a&&(a.endsWith(".glb")||a.endsWith(".gltf")))return <model-viewer src={a} camera-controls auto-rotate rotation-per-second="120" interaction-prompt="none" style={{width:"100%",height:"100%"}}></model-viewer>;return a?<img src={a} className="w-full h-full object-cover"/>:(u.nickname?.[0]||"?")})()}
                   </div>
                   <div>
                     <p className="font-medium">{u.nickname}</p>
@@ -294,7 +294,7 @@ export default function Contacts() {
                 {groupedFriends[letter].map(f => (
                   <div key={f.id} className="flex items-center p-4 active:bg-wechat-bg transition">
                     <div className="w-10 h-10 rounded-lg bg-wechat-green/20 flex items-center justify-center text-wechat-green font-bold flex-shrink-0 overflow-hidden">
-                      {(()=>{const a=f.avatar;if(a&&(a.endsWith(".glb")||a.endsWith(".gltf")))return <model-viewer src={a} camera-controls auto-rotate interaction-prompt="none" style={{width:"100%",height:"100%"}}></model-viewer>;return a?<img src={a} className="w-full h-full object-cover"/>:(f.nickname?.[0]||"?")})()}
+                      {(()=>{const a=f.avatar;if(a&&(a.endsWith(".glb")||a.endsWith(".gltf")))return <model-viewer src={a} camera-controls auto-rotate rotation-per-second="120" interaction-prompt="none" style={{width:"100%",height:"100%"}}></model-viewer>;return a?<img src={a} className="w-full h-full object-cover"/>:(f.nickname?.[0]||"?")})()}
                     </div>
                     <div className="ml-3">
                       <p className="font-medium text-wechat-dark">{f.nickname}</p>
@@ -357,7 +357,7 @@ export default function Contacts() {
           {allUsers.map(u => (
             <div key={u.id} className="flex items-center p-4 bg-white border-b border-wechat-border">
               <div className="w-10 h-10 rounded-lg bg-wechat-green/20 flex items-center justify-center text-wechat-green font-bold flex-shrink-0 overflow-hidden">
-                {(()=>{const a=u.avatar;if(a&&(a.endsWith(".glb")||a.endsWith(".gltf")))return <model-viewer src={a} camera-controls auto-rotate interaction-prompt="none" style={{width:"100%",height:"100%"}}></model-viewer>;return a?<img src={a} className="w-full h-full object-cover"/>:(u.nickname?.[0]||"?")})()}
+                {(()=>{const a=u.avatar;if(a&&(a.endsWith(".glb")||a.endsWith(".gltf")))return <model-viewer src={a} camera-controls auto-rotate rotation-per-second="120" interaction-prompt="none" style={{width:"100%",height:"100%"}}></model-viewer>;return a?<img src={a} className="w-full h-full object-cover"/>:(u.nickname?.[0]||"?")})()}
               </div>
               <div className="ml-3 flex-1">
                 <p className="font-medium text-wechat-dark">{u.nickname}</p>
@@ -400,7 +400,7 @@ export default function Contacts() {
               <h3 className="text-lg font-bold mb-4">添加好友</h3>
               <div className="flex items-center gap-3 mb-4 p-3 bg-wechat-bg rounded-lg">
                 <div className="w-10 h-10 rounded-lg bg-wechat-green/20 flex items-center justify-center text-wechat-green font-bold">
-                  {(()=>{const a=showAddModal.avatar;if(a&&(a.endsWith(".glb")||a.endsWith(".gltf")))return <model-viewer src={a} camera-controls auto-rotate interaction-prompt="none" style={{width:"100%",height:"100%"}}></model-viewer>;return a?<img src={a} className="w-full h-full rounded-lg object-cover"/>:(showAddModal.nickname?.[0]||"?")})()}
+                  {(()=>{const a=showAddModal.avatar;if(a&&(a.endsWith(".glb")||a.endsWith(".gltf")))return <model-viewer src={a} camera-controls auto-rotate rotation-per-second="120" interaction-prompt="none" style={{width:"100%",height:"100%"}}></model-viewer>;return a?<img src={a} className="w-full h-full rounded-lg object-cover"/>:(showAddModal.nickname?.[0]||"?")})()}
                 </div>
                 <div>
                   <p className="font-medium">{showAddModal.nickname}</p>
@@ -500,7 +500,12 @@ export default function Contacts() {
             <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} className="bg-white w-full sm:max-w-sm sm:rounded-2xl rounded-t-2xl max-h-[70vh] overflow-hidden" onClick={e => e.stopPropagation()}>
               <div className="flex items-center justify-between p-4 border-b">
                 <h3 className="font-bold">{showGroupMembers.name} ({groupMemberList.length}人)</h3>
-                <button onClick={() => setShowGroupMembers(null)} className="text-gray-400"><X size={20} /></button>
+                <div className="flex items-center gap-2">
+                  {showGroupMembers.owner_id === currentUser?.id && (
+                    <button onClick={async (e) => { e.stopPropagation(); if(confirm('确定删除群聊?')) { await fetch('/api/groups/'+showGroupMembers.id, {method:'DELETE',headers:{Authorization:'Bearer '+useStore.getState().token}}); setShowGroupMembers(null); fetchGroups(); toast.success('群聊已删除') } }} className="text-red-400 text-xs px-2 py-1 rounded hover:bg-red-50">删除群聊</button>
+                  )}
+                  <button onClick={() => setShowGroupMembers(null)} className="text-gray-400"><X size={20} /></button>
+                </div>
               </div>
               <div className="overflow-y-auto max-h-[55vh] p-4">
                 {groupMemberList.length === 0 ? (

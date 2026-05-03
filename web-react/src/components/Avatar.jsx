@@ -12,7 +12,7 @@ export default function Avatar({ src, name, size = 10, className = '' }) {
         <model-viewer
           src={src}
           camera-controls
-          auto-rotate
+          auto-rotate rotation-per-second="120"
           interaction-prompt="none"
           style={{ width: '100%', height: '100%', background: 'transparent' }}
           onError={() => setFailed(true)}

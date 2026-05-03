@@ -99,7 +99,7 @@ export default function ChatList() {
                     <MessageSquare size={22} />
                   ) : item.avatar ? (
                     item.avatar.endsWith('.glb') || item.avatar.endsWith('.gltf') ? (
-                      <model-viewer src={item.avatar} camera-controls auto-rotate interaction-prompt="none" style={{ width: '100%', height: '100%' }}></model-viewer>
+                      <model-viewer src={item.avatar} camera-controls auto-rotate rotation-per-second="120" interaction-prompt="none" style={{ width: '100%', height: '100%' }}></model-viewer>
                     ) : (
                       <img src={item.avatar} className="w-full h-full object-cover" />
                     )

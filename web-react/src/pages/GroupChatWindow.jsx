@@ -312,7 +312,7 @@ export default function GroupChatWindow() {
             <div className="w-8 h-8 rounded-full bg-wechat-green/20 flex items-center justify-center text-wechat-green text-sm font-bold flex-shrink-0 overflow-hidden">
               {user?.avatar ? (
                 user.avatar.endsWith('.glb') || user.avatar.endsWith('.gltf') ? (
-                  <model-viewer src={user.avatar} camera-controls auto-rotate interaction-prompt="none" style={{width:'100%',height:'100%'}}></model-viewer>
+                  <model-viewer src={user.avatar} camera-controls auto-rotate rotation-per-second="120" interaction-prompt="none" style={{width:'100%',height:'100%'}}></model-viewer>
                 ) : <img src={user.avatar} className="w-full h-full object-cover" />
               ) : (user?.nickname?.[0] || '?')}
             </div>
@@ -320,7 +320,7 @@ export default function GroupChatWindow() {
             <div className="w-8 h-8 rounded-full bg-wechat-green/20 flex items-center justify-center text-wechat-green text-sm font-bold flex-shrink-0 overflow-hidden">
               {sender?.avatar ? (
                 sender.avatar.endsWith('.glb') || sender.avatar.endsWith('.gltf') ? (
-                  <model-viewer src={sender.avatar} camera-controls auto-rotate interaction-prompt="none" style={{width:'100%',height:'100%'}}></model-viewer>
+                  <model-viewer src={sender.avatar} camera-controls auto-rotate rotation-per-second="120" interaction-prompt="none" style={{width:'100%',height:'100%'}}></model-viewer>
                 ) : <img src={sender.avatar} className="w-full h-full object-cover" />
               ) : (sender?.nickname?.[0] || '?')}
             </div>
@@ -369,7 +369,7 @@ export default function GroupChatWindow() {
                   <model-viewer 
                     src={msg.content} 
                     camera-controls 
-                    auto-rotate 
+                    auto-rotate rotation-per-second="120" 
                     style={{ width: '200px', height: '200px', background: '#1a1a2e' }}
                     className="rounded-lg"
                   ></model-viewer>
@@ -570,7 +570,7 @@ export default function GroupChatWindow() {
               <button onClick={() => setPreviewImage(null)} className="absolute top-4 right-4 z-10 w-10 h-10 bg-black/60 text-white rounded-full flex items-center justify-center text-xl hover:bg-black/80 transition">✕</button>
               {previewImage.endsWith('.glb') || previewImage.endsWith('.gltf') ? (
                 <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} exit={{ scale: 0.8 }} onClick={e => e.stopPropagation()}>
-                  <model-viewer src={previewImage} camera-controls auto-rotate style={{ width: '90vw', height: '80vh' }} className="rounded-lg"></model-viewer>
+                  <model-viewer src={previewImage} camera-controls auto-rotate rotation-per-second="120" style={{ width: '90vw', height: '80vh' }} className="rounded-lg"></model-viewer>
                 </motion.div>
               ) : (
                 <motion.img initial={{ scale: 0.8 }} animate={{ scale: 1 }} exit={{ scale: 0.8 }} src={previewImage} alt="Preview" className="max-w-full max-h-full object-contain" />

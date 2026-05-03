@@ -99,3 +99,22 @@ func (h *GroupHandler) AddMembers(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "members added"})
 }
+
+func (h *GroupHandler) DeleteGroup(c *gin.Context) {
+	userID := getUserID(c)
+	gid := c.Param("id")
+
+	var group models.Group
+	if err := h.DB.First(&group, "id = ?", gid).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "group not found"})
+		return
+	}
+	if group.OwnerID != userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "only owner can delete"})
+		return
+	}
+
+	h.DB.Where("group_id = ?", gid).Delete(&models.GroupMember{})
+	h.DB.Delete(&group)
+	c.JSON(http.StatusOK, gin.H{"message": "deleted"})
+}

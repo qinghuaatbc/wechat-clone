@@ -90,6 +90,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *services.RedisService, hub *
 			protected.GET("/groups", groupH.GetGroups)
 			protected.GET("/groups/:id/members", groupH.GetMembers)
 			protected.POST("/groups/:id/members", groupH.AddMembers)
+			protected.DELETE("/groups/:id", groupH.DeleteGroup)
 
 			protected.POST("/moments", momentH.Create)
 			protected.GET("/moments", momentH.GetFeed)

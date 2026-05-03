@@ -95,7 +95,7 @@ export default function Profile() {
               <div className="relative group cursor-pointer" onClick={() => fileInput.current.click()}>
               {is3DAvatar(user?.avatar) ? (
                 <div className="w-16 h-16 rounded-xl overflow-hidden">
-                  <model-viewer src={user.avatar} camera-controls auto-rotate interaction-prompt="none" style={{ width: '100%', height: '100%' }}></model-viewer>
+                  <model-viewer src={user.avatar} camera-controls auto-rotate rotation-per-second="120" interaction-prompt="none" style={{ width: '100%', height: '100%' }}></model-viewer>
                 </div>
               ) : (
                 <div className="w-16 h-16 rounded-xl bg-wechat-green/20 flex items-center justify-center text-wechat-green text-2xl font-bold overflow-hidden">
