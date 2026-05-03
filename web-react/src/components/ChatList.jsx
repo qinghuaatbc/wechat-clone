@@ -70,8 +70,14 @@ export default function ChatList() {
             </Link>
           ) : (
             <Link key={item.id} to={`/chat/${item.id}`} className="flex items-center p-4 bg-white active:bg-wechat-bg transition-colors relative">
-              <div className="w-12 h-12 rounded-xl bg-wechat-green/20 flex items-center justify-center text-wechat-green text-xl font-bold flex-shrink-0">
-                {item.nickname?.[0] || '?'}
+              <div className="w-12 h-12 rounded-xl bg-wechat-green/20 flex items-center justify-center text-wechat-green text-xl font-bold flex-shrink-0 overflow-hidden">
+                {item.avatar ? (
+                  item.avatar.endsWith('.glb') || item.avatar.endsWith('.gltf') ? (
+                    <model-viewer src={item.avatar} camera-controls auto-rotate interaction-prompt="none" style={{ width: '100%', height: '100%' }}></model-viewer>
+                  ) : (
+                    <img src={item.avatar} className="w-full h-full object-cover" />
+                  )
+                ) : (item.nickname?.[0] || '?')}
               </div>
               <div className="ml-3 flex-1 min-w-0">
                 <div className="flex justify-between items-center">
