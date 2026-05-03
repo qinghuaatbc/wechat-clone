@@ -5,6 +5,8 @@ import Login from './pages/Login'
 import MainLayout from './pages/MainLayout'
 import ChatWindow from './pages/ChatWindow'
 import GroupChatWindow from './pages/GroupChatWindow'
+import TV from './pages/TV'
+import CloudDisk from './pages/CloudDisk'
 
 const PrivateRoute = ({ children }) => {
   const token = useStore(s => s.token)
@@ -27,6 +29,8 @@ export default function App() {
             <Route path="/" element={<MainLayout />} />
             <Route path="/chat/:id" element={<ChatWindow />} />
             <Route path="/chat/group/:groupId" element={<GroupChatWindow />} />
+            <Route path="/tv" element={<TV />} />
+            <Route path="/cloud" element={<CloudDisk />} />
           </Routes>
         </PrivateRoute>
       } />

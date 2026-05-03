@@ -18,6 +18,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *services.RedisService, hub *
 	momentH := NewMomentHandler(db)
 	wsH := NewWSHandler(hub, msgH)
 	uploadH := NewUploadHandler()
+	cloudH := NewCloudHandler(db)
 
 	auth := middleware.AuthMiddleware(jwtSecret)
 
@@ -66,6 +67,13 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *services.RedisService, hub *
 			protected.POST("/moments/comment", momentH.Comment)
 			protected.GET("/moments/:id/comments", momentH.GetComments)
 			protected.POST("/upload", uploadH.UploadFile)
+
+			protected.POST("/cloud/mkdir", cloudH.CreateDir)
+			protected.POST("/cloud/upload", cloudH.UploadFile)
+			protected.GET("/cloud/list", cloudH.ListFiles)
+			protected.POST("/cloud/share", cloudH.ShareFile)
+			protected.GET("/cloud/shared", cloudH.GetShared)
+			protected.DELETE("/cloud/:id", cloudH.DeleteFile)
 		}
 	}
 
@@ -77,6 +85,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *services.RedisService, hub *
 			c.File("./web-react/dist/index.html")
 		})
 		r.Static("/assets", "./web-react/dist/assets")
+		r.Static("/uploads/cloud", "./uploads/cloud")
 		r.GET("/uploads/*filepath", func(c *gin.Context) {
 			filepath := uploadH.UploadDir + "/" + c.Param("filepath")
 			ext := strings.ToLower(filepath[strings.LastIndex(filepath, "."):])
