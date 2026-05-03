@@ -72,11 +72,22 @@ export default function Contacts() {
     } catch (e) { toast.error('加载失败') }
   }
 
-  const handleSearch = async () => {
-    if (!keyword.trim()) return
-    const results = await searchUser(keyword)
-    setSearchResults(results)
+  const handleSearch = () => {
+    if (!keyword.trim()) { setSearchResults([]); return }
+    const kw = keyword.toLowerCase()
+    if (activeTab === 'friends') {
+      setSearchResults(friends.filter(f => f.nickname?.toLowerCase().includes(kw) || f.wxid?.toLowerCase().includes(kw)))
+    } else if (activeTab === 'groups') {
+      setSearchResults(groups.filter(g => g.name?.toLowerCase().includes(kw)))
+    } else {
+      searchUser(kw).then(setSearchResults)
+    }
   }
+
+  useEffect(() => {
+    const timer = setTimeout(handleSearch, 200)
+    return () => clearTimeout(timer)
+  }, [keyword, activeTab])
 
   const handleAddClick = (user) => {
     setShowAddModal(user)
@@ -200,15 +211,21 @@ export default function Contacts() {
           {searchResults.map(u => (
             <div key={u.id} className="flex items-center p-4 justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-wechat-green/20 flex items-center justify-center text-wechat-green font-bold flex-shrink-0 overflow-hidden">
-                  {u.avatar ? <img src={u.avatar} className="w-full h-full object-cover" /> : (u.nickname?.[0] || '?')}
-                </div>
+                {activeTab === 'groups' ? (
+                  <div className="w-10 h-10 rounded-lg bg-gray-500 flex items-center justify-center text-white font-bold flex-shrink-0">
+                    <MessageSquare size={20} />
+                  </div>
+                ) : (
+                  <div className="w-10 h-10 rounded-lg bg-wechat-green/20 flex items-center justify-center text-wechat-green font-bold flex-shrink-0 overflow-hidden">
+                    {u.avatar ? <img src={u.avatar} className="w-full h-full object-cover" /> : ((u.nickname || u.name)?.[0] || '?')}
+                  </div>
+                )}
                 <div>
-                  <p className="font-medium">{u.nickname}</p>
-                  <p className="text-sm text-wechat-gray">微信号: {u.wxid}</p>
+                  <p className="font-medium">{u.nickname || u.name}</p>
+                  <p className="text-sm text-wechat-gray">{activeTab === 'groups' ? '' : '微信号: ' + u.wxid}</p>
                 </div>
               </div>
-              {u.is_friend ? (
+              {activeTab !== 'groups' && (u.is_friend ? (
                 <span className="px-3 py-1 bg-wechat-bg text-wechat-gray rounded-full text-xs flex items-center gap-1">
                   <UserCheck size={12} /> 已是好友
                 </span>
@@ -217,13 +234,10 @@ export default function Contacts() {
                   <Clock size={12} /> 等待对方确认
                 </span>
               ) : (
-                <button
-                  onClick={() => handleAddClick(u)}
-                  className="px-4 py-1.5 bg-wechat-green text-white rounded-full text-sm hover:opacity-90 flex items-center gap-1"
-                >
+                <button onClick={() => handleAddClick(u)} className="px-4 py-1.5 bg-wechat-green text-white rounded-full text-sm hover:opacity-90 flex items-center gap-1">
                   <UserPlus size={14} /> 添加
                 </button>
-              )}
+              ))}
             </div>
           ))}
         </div>
@@ -231,8 +245,8 @@ export default function Contacts() {
 
       {keyword && searchResults.length === 0 && (
         <div className="flex flex-col items-center justify-center py-12 text-wechat-gray">
-          <p className="text-lg">未找到{activeTab === 'friends' ? '用户' : '群聊'}</p>
-          <p className="text-sm">请检查{activeTab === 'friends' ? '微信号、昵称或手机号' : '群名称'}是否正确</p>
+          <p className="text-lg">未找到{activeTab === 'friends' ? '好友' : activeTab === 'groups' ? '群聊' : '用户'}</p>
+          <p className="text-sm">{activeTab === 'all-users' ? '请检查微信号或昵称是否正确' : '请检查名称是否正确'}</p>
         </div>
       )}
 
