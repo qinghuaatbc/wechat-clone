@@ -367,7 +367,10 @@ export default function GroupChatWindow() {
     <div className="flex flex-col h-screen max-w-md mx-auto bg-[#F5F5F5] dark:bg-wechat-dark">
       <header className="flex items-center justify-between px-4 py-3 bg-wechat-bar dark:bg-wechat-dark border-b border-wechat-border z-10">
         <button onClick={() => navigate(-1)} className="p-1 active:bg-wechat-bg rounded transition"><ArrowLeft size={24} /></button>
-        <h2 className="font-semibold text-lg">{group.name}</h2>
+        <div className="flex flex-col items-center">
+          <h2 className="font-semibold text-lg">{group.name}</h2>
+          <span className="text-xs text-wechat-gray">{groupMembers.length} 人</span>
+        </div>
         <button onClick={() => setShowMembers(true)} className="p-1 active:bg-wechat-bg rounded transition"><Users size={24} /></button>
       </header>
 
