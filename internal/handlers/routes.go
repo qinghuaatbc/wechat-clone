@@ -50,6 +50,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *services.RedisService, hub *
 	cloudH := NewCloudHandler(db)
 	adminH := NewAdminHandler(db)
 
+	libraryH := NewLibraryHandler(db)
 	auth := middleware.AuthMiddleware(jwtSecret)
 
 	r.Use(middleware.RateLimit())
@@ -63,6 +64,9 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *services.RedisService, hub *
 		api.POST("/register", authH.Register)
 		api.POST("/login", authH.Login)
 		api.GET("/hls/channels", adminH.ListHLS)
+		api.GET("/library", libraryH.ListPublic)
+		api.GET("/library/categories", libraryH.GetCategories)
+		api.GET("/library/:id/download", libraryH.Download)
 
 		protected := api.Group("", auth)
 		{
@@ -105,6 +109,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *services.RedisService, hub *
 			protected.GET("/cloud/list", cloudH.ListFiles)
 			protected.POST("/cloud/share", cloudH.ShareFile)
 			protected.GET("/cloud/shared", cloudH.GetShared)
+			protected.PUT("/cloud/:id/rename", cloudH.RenameFile)
 			protected.DELETE("/cloud/:id", cloudH.DeleteFile)
 		}
 	}
@@ -120,14 +125,22 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *services.RedisService, hub *
 		admin.DELETE("/groups/:id", adminH.DeleteGroup)
 		admin.GET("/hls", adminH.ListHLS)
 		admin.POST("/hls", adminH.CreateHLS)
+		admin.PUT("/hls/:id", adminH.UpdateHLS)
 		admin.DELETE("/hls/:id", adminH.DeleteHLS)
 		admin.GET("/files", adminH.ListFiles)
 		admin.DELETE("/files/:id", adminH.DeleteFile)
+		admin.GET("/library", libraryH.AdminList)
+		admin.POST("/library", libraryH.AdminUpload)
+		admin.PUT("/library/:id", libraryH.AdminUpdate)
+		admin.DELETE("/library/:id", libraryH.AdminDelete)
 	}
 
 	// Serve React production build (if exists)
 	if _, err := os.Stat("./web-react/dist"); err == nil {
 		r.NoRoute(func(c *gin.Context) {
+			c.Header("Cache-Control", "no-cache, no-store, must-revalidate")
+			c.Header("Pragma", "no-cache")
+			c.Header("Expires", "0")
 			c.File("./web-react/dist/index.html")
 		})
 		r.Static("/assets", "./web-react/dist/assets")
@@ -135,6 +148,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *services.RedisService, hub *
 		r.GET("/uploads/*filepath", func(c *gin.Context) {
 			serveFile(c, uploadH.UploadDir, c.Param("filepath"))
 		})
+		r.Static("/library-files", "./uploads/library")
 	} else {
 		r.StaticFile("/", "./web/index.html")
 		r.StaticFile("/css/style.css", "./web/css/style.css")

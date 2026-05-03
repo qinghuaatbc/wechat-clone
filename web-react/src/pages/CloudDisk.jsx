@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Upload, FolderPlus, Folder, File, Download, Trash2, Share2, Globe, Lock, Users, Image, Video, Music, FileText, Archive } from 'lucide-react'
+import { ArrowLeft, Upload, FolderPlus, Folder, File, Download, Trash2, Share2, Globe, Lock, Users, Image, Video, Music, FileText, Archive, Pencil, X, Eye, FileType } from 'lucide-react'
 import { useStore } from '../store'
 import { toast } from 'sonner'
 
@@ -27,8 +27,11 @@ export default function CloudDisk() {
   const [showNewFolder, setShowNewFolder] = useState(false)
   const [newFolderName, setNewFolderName] = useState('')
   const [showShare, setShowShare] = useState(null)
+  const [showRename, setShowRename] = useState(null)
+  const [renameValue, setRenameValue] = useState('')
   const [tab, setTab] = useState('my')
   const [uploading, setUploading] = useState(false)
+  const [previewFile, setPreviewFile] = useState(null)
   const fileInputRef = useRef(null)
 
   const loadFiles = useCallback(async () => {
@@ -83,6 +86,17 @@ export default function CloudDisk() {
     } catch (e) { toast.error(e.message) }
   }
 
+  const renameFile = async () => {
+    if (!renameValue.trim()) { toast.error('请输入名称'); return }
+    try {
+      await request(`/api/cloud/${showRename.id}/rename`, { method: 'PUT', body: JSON.stringify({ name: renameValue.trim() }) })
+      setShowRename(null)
+      setRenameValue('')
+      toast.success('已重命名')
+      loadFiles()
+    } catch (e) { toast.error(e.message) }
+  }
+
   const shareFile = async (fileId, permission) => {
     try {
       await request('/api/cloud/share', { method: 'POST', body: JSON.stringify({ file_id: fileId, permission }) })
@@ -95,6 +109,11 @@ export default function CloudDisk() {
   const enterDir = (dir) => {
     setCurrentDir(dir.id)
     setPath(prev => [...prev, { id: dir.id, name: dir.name }])
+  }
+
+  const handlePreview = (f) => {
+    if (f.is_dir) return
+    setPreviewFile(f)
   }
 
   const handleDownload = (f) => {
@@ -171,14 +190,20 @@ export default function CloudDisk() {
               const Icon = getIcon(f)
               return (
                 <div key={f.id} className="flex items-center px-4 py-3 bg-white border-b active:bg-gray-50 transition">
-                  <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0 cursor-pointer" onClick={() => f.is_dir && enterDir(f)}>
+                  <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0 cursor-pointer" onClick={() => f.is_dir ? enterDir(f) : handlePreview(f)}>
                     <Icon.icon size={22} className={Icon.color} />
                   </div>
-                  <div className="ml-3 flex-1 min-w-0 cursor-pointer" onClick={() => f.is_dir && enterDir(f)}>
+                  <div className="ml-3 flex-1 min-w-0 cursor-pointer" onClick={() => f.is_dir ? enterDir(f) : handlePreview(f)}>
                     <p className="text-sm font-medium truncate">{f.name || '未命名'}</p>
                     <p className="text-xs text-gray-400">{f.is_dir ? '' : formatSize(f.size)}</p>
                   </div>
                   <div className="flex items-center gap-1">
+                    <button onClick={() => handlePreview(f)} className="p-1.5 hover:bg-gray-100 rounded" title="预览">
+                      <Eye size={16} className="text-gray-500" />
+                    </button>
+                    <button onClick={() => { setShowRename(f); setRenameValue(f.name) }} className="p-1.5 hover:bg-gray-100 rounded" title="重命名">
+                      <Pencil size={16} className="text-gray-500" />
+                    </button>
                     {!f.is_dir && (
                       <button onClick={() => handleDownload(f)} className="p-1.5 hover:bg-gray-100 rounded" title="下载">
                         <Download size={16} className="text-gray-500" />
@@ -204,23 +229,91 @@ export default function CloudDisk() {
           ) : (
             shared.map(f => (
               <div key={f.id} className="flex items-center px-4 py-3 bg-white border-b">
-                <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center cursor-pointer" onClick={() => !f.is_dir && handlePreview(f)}>
                   {f.is_dir ? <Folder size={22} className="text-yellow-500" /> : <File size={22} className="text-blue-500" />}
                 </div>
-                <div className="ml-3 flex-1 min-w-0">
+                <div className="ml-3 flex-1 min-w-0 cursor-pointer" onClick={() => !f.is_dir && handlePreview(f)}>
                   <p className="text-sm font-medium truncate">{f.name}</p>
                   <p className="text-xs text-gray-400">{f.owner_name} · {formatSize(f.size)}</p>
                 </div>
                 {!f.is_dir && (
-                  <button onClick={() => handleDownload(f)} className="p-1.5 hover:bg-gray-100 rounded">
-                    <Download size={16} className="text-gray-500" />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => handlePreview(f)} className="p-1.5 hover:bg-gray-100 rounded" title="预览">
+                      <Eye size={16} className="text-gray-500" />
+                    </button>
+                    <button onClick={() => handleDownload(f)} className="p-1.5 hover:bg-gray-100 rounded" title="下载">
+                      <Download size={16} className="text-gray-500" />
+                    </button>
+                  </div>
                 )}
               </div>
             ))
           )
         )}
       </div>
+
+      {previewFile && (
+        <div className="fixed inset-0 bg-black z-50 flex flex-col" onClick={() => setPreviewFile(null)}>
+          <header className="flex items-center justify-between px-4 py-3 bg-black/80 text-white" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <Eye size={18} className="flex-shrink-0" />
+              <span className="text-sm font-medium truncate">{previewFile.name}</span>
+            </div>
+            <button onClick={() => setPreviewFile(null)} className="p-1 hover:bg-white/10 rounded flex-shrink-0"><X size={22} /></button>
+          </header>
+          <div className="flex-1 flex items-center justify-center bg-black p-4" onClick={e => e.stopPropagation()}>
+            {(() => {
+              const ext = previewFile.name?.split('.').pop()?.toLowerCase()
+              const isImage = ['jpg','jpeg','png','gif','webp','bmp','svg'].includes(ext)
+              const isVideo = ['mp4','webm','avi','mov','mkv'].includes(ext)
+              const isAudio = ['mp3','wav','ogg','flac','aac'].includes(ext)
+              const is3D = ['glb','gltf'].includes(ext)
+              const isPDF = ext === 'pdf'
+
+              if (isImage) {
+                return <img src={previewFile.path} alt={previewFile.name} className="max-w-full max-h-full object-contain rounded-lg" />
+              }
+              if (isVideo) {
+                return <video src={previewFile.path} controls className="max-w-full max-h-full rounded-lg" autoPlay />
+              }
+              if (isAudio) {
+                return (
+                  <div className="text-center">
+                    <div className="w-24 h-24 rounded-full bg-wechat-green/20 flex items-center justify-center mx-auto mb-6">
+                      <Music size={48} className="text-wechat-green" />
+                    </div>
+                    <audio src={previewFile.path} controls className="w-80 max-w-full" autoPlay />
+                  </div>
+                )
+              }
+              if (is3D) {
+                return (
+                  <model-viewer src={previewFile.path} camera-controls auto-rotate rotation-per-second="60"
+                    interaction-prompt="none" style={{ width: '100%', height: '100%' }}
+                    class="w-full h-full"></model-viewer>
+                )
+              }
+              if (isPDF) {
+                return <iframe src={previewFile.path} className="w-full h-full rounded-lg" title={previewFile.name} />
+              }
+              return (
+                <div className="text-center text-gray-400">
+                  <FileType size={64} className="mx-auto mb-4 opacity-50" />
+                  <p className="text-sm mb-4">该类型暂不支持预览</p>
+                  <button onClick={() => handleDownload(previewFile)}
+                    className="px-6 py-2.5 bg-wechat-green text-white rounded-lg text-sm inline-flex items-center gap-2">
+                    <Download size={16} /> 下载文件
+                  </button>
+                </div>
+              )
+            })()}
+          </div>
+          <div className="flex items-center justify-between px-4 py-3 bg-black/80 text-white text-sm" onClick={e => e.stopPropagation()}>
+            <span className="text-gray-400">{previewFile.type}</span>
+            <span className="text-gray-400">{formatSize(previewFile.size)}</span>
+          </div>
+        </div>
+      )}
 
       {showNewFolder && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-6" onClick={() => setShowNewFolder(false)}>
@@ -230,6 +323,19 @@ export default function CloudDisk() {
             <div className="flex gap-2">
               <button onClick={() => setShowNewFolder(false)} className="flex-1 py-2.5 bg-gray-100 rounded-lg text-sm">取消</button>
               <button onClick={createFolder} className="flex-1 py-2.5 bg-wechat-green text-white rounded-lg text-sm">创建</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRename && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-6" onClick={() => setShowRename(null)}>
+          <div className="bg-white rounded-xl p-6 w-full max-w-sm" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold mb-4">重命名</h3>
+            <input autoFocus value={renameValue} onChange={e => setRenameValue(e.target.value)} onKeyDown={e => e.key === 'Enter' && renameFile()} placeholder="新名称" className="w-full p-3 bg-gray-100 rounded-lg text-sm focus:outline-none mb-4" />
+            <div className="flex gap-2">
+              <button onClick={() => setShowRename(null)} className="flex-1 py-2.5 bg-gray-100 rounded-lg text-sm">取消</button>
+              <button onClick={renameFile} className="flex-1 py-2.5 bg-wechat-green text-white rounded-lg text-sm">确定</button>
             </div>
           </div>
         </div>

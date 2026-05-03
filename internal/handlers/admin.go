@@ -112,6 +112,27 @@ func (h *AdminHandler) CreateHLS(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"channel": ch})
 }
 
+func (h *AdminHandler) UpdateHLS(c *gin.Context) {
+	var req HLSUpsertReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	ch := models.HLSChannel{}
+	if err := h.DB.First(&ch, "id = ?", c.Param("id")).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+		return
+	}
+	cat := req.Category
+	if cat == "" {
+		cat = "custom"
+	}
+	h.DB.Model(&ch).Updates(map[string]interface{}{
+		"name": req.Name, "url": req.URL, "category": cat,
+	})
+	c.JSON(http.StatusOK, gin.H{"channel": ch})
+}
+
 func (h *AdminHandler) DeleteHLS(c *gin.Context) {
 	h.DB.Where("id = ?", c.Param("id")).Delete(&models.HLSChannel{})
 	c.JSON(http.StatusOK, gin.H{"message": "deleted"})

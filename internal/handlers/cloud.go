@@ -203,6 +203,30 @@ func (h *CloudHandler) GetShared(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"files": results})
 }
 
+type RenameReq struct {
+	Name string `json:"name" binding:"required"`
+}
+
+func (h *CloudHandler) RenameFile(c *gin.Context) {
+	userID := getUserID(c)
+	fileID := c.Param("id")
+
+	var req RenameReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var cf models.CloudFile
+	if err := h.DB.First(&cf, "id = ? AND user_id = ?", fileID, userID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "file not found"})
+		return
+	}
+
+	h.DB.Model(&cf).Update("name", req.Name)
+	c.JSON(http.StatusOK, gin.H{"message": "renamed"})
+}
+
 func (h *CloudHandler) DeleteFile(c *gin.Context) {
 	userID := getUserID(c)
 	fileID := c.Param("id")

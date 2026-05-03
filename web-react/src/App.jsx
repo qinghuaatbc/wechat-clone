@@ -7,6 +7,7 @@ import ChatWindow from './pages/ChatWindow'
 import GroupChatWindow from './pages/GroupChatWindow'
 import TV from './pages/TV'
 import CloudDisk from './pages/CloudDisk'
+import Library from './pages/Library'
 import AdminLogin from './pages/AdminLogin'
 import AdminDashboard from './pages/AdminDashboard'
 
@@ -35,6 +36,7 @@ export default function App() {
             <Route path="/chat/group/:groupId" element={<GroupChatWindow />} />
             <Route path="/tv" element={<TV />} />
             <Route path="/cloud" element={<CloudDisk />} />
+            <Route path="/library" element={<Library />} />
           </Routes>
         </PrivateRoute>
       } />

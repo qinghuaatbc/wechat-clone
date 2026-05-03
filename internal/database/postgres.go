@@ -34,6 +34,7 @@ func Connect(cfg *config.Config) {
 		&models.MomentLike{},
 		&models.CloudFile{},
 		&models.HLSChannel{},
+		&models.LibraryItem{},
 	); err != nil {
 		log.Fatal("failed to migrate database:", err)
 	}

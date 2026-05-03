@@ -37,7 +37,7 @@ export default function MainLayout() {
     switch (activeTab) {
       case 'chat': return <ChatList />
       case 'contacts': return <Contacts />
-      case 'discover': return <Discover onGroupClick={() => setShowGroups(true)} />
+      case 'discover': return <Discover />
       case 'profile': return <Profile />
       default: return <ChatList />
     }
