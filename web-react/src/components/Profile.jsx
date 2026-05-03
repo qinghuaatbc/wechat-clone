@@ -1,6 +1,6 @@
 import { useStore } from '../store'
 import { useState, useRef } from 'react'
-import { LogOut, ChevronRight, User, Settings, QrCode, Moon, Sun, Type, Image, X, Download, Scan, Globe } from 'lucide-react'
+import { LogOut, ChevronRight, User, Settings, QrCode, Moon, Sun, Type, Image, X, Download, Scan, Globe, Box } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { QRCodeSVG } from 'qrcode.react'
 import QRScanner from './QRScanner'
@@ -22,12 +22,27 @@ export default function Profile() {
   const [showQR, setShowQR] = useState(false)
   const [showScanner, setShowScanner] = useState(false)
   const fileInput = useRef(null)
+  const modelInput = useRef(null)
+
+  const is3DAvatar = (url) => url && (url.endsWith('.glb') || url.endsWith('.gltf'))
 
   const handleAvatarChange = async (e) => {
     const file = e.target.files?.[0]
     if (file) {
       await updateProfile({ avatarFile: file })
     }
+  }
+
+  const handleModelAvatar = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const fd = new FormData()
+    fd.append('file', file)
+    try {
+      const res = await fetch('/api/upload', { method: 'POST', headers: { Authorization: `Bearer ${useStore.getState().token}` }, body: fd })
+      const data = await res.json()
+      if (data.url) await updateProfile({ avatar: data.url })
+    } catch {}
   }
 
   const handleDownloadQR = () => {
@@ -57,6 +72,7 @@ export default function Profile() {
       if (newName) updateProfile({ nickname: newName })
     }},
     { icon: Image, label: t('changeAvatar'), action: () => fileInput.current.click() },
+    { icon: Box, label: '3D头像', desc: 'GLB/GLTF', action: () => modelInput.current.click() },
     { icon: isDark ? Sun : Moon, label: isDark ? t('lightMode') : t('darkMode'), action: toggleDark },
     { icon: Type, label: t('fontSize'), desc: `${fontSize}px` },
     { icon: Globe, label: t('language'), desc: lang === 'zh' ? '中文' : 'English', action: toggleLang },
@@ -76,13 +92,20 @@ export default function Profile() {
     <div className="pb-16 bg-wechat-bg dark:bg-wechat-dark min-h-screen">
       <div className="bg-white dark:bg-wechat-dark p-6 mb-2">
         <div className="flex items-center gap-4">
-          <div className="relative group cursor-pointer" onClick={() => fileInput.current.click()}>
-            <div className="w-16 h-16 rounded-xl bg-wechat-green/20 flex items-center justify-center text-wechat-green text-2xl font-bold overflow-hidden">
-              {user?.avatar ? <img src={user.avatar} className="w-full h-full object-cover" /> : (user?.nickname?.[0] || '?')}
-            </div>
-            <div className="absolute inset-0 bg-black/30 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition"><Image size={20} className="text-white" /></div>
-          </div>
-          <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+              <div className="relative group cursor-pointer" onClick={() => fileInput.current.click()}>
+              {is3DAvatar(user?.avatar) ? (
+                <div className="w-16 h-16 rounded-xl overflow-hidden">
+                  <model-viewer src={user.avatar} camera-controls auto-rotate interaction-prompt="none" style={{ width: '100%', height: '100%' }}></model-viewer>
+                </div>
+              ) : (
+                <div className="w-16 h-16 rounded-xl bg-wechat-green/20 flex items-center justify-center text-wechat-green text-2xl font-bold overflow-hidden">
+                  {user?.avatar ? <img src={user.avatar} className="w-full h-full object-cover" /> : (user?.nickname?.[0] || '?')}
+                </div>
+              )}
+                <div className="absolute inset-0 bg-black/30 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition"><Image size={20} className="text-white" /></div>
+              </div>
+              <input ref={fileInput} type="file" accept="image/*,.glb,.gltf,.obj" className="hidden" onChange={handleAvatarChange} />
+              <input ref={modelInput} type="file" accept=".glb,.gltf" className="hidden" onChange={handleModelAvatar} />
           
           <div className="flex-1" onClick={() => {
             const newName = prompt(t('newInput'), user?.nickname)

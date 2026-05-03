@@ -62,6 +62,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *services.RedisService, hub *
 	{
 		api.POST("/register", authH.Register)
 		api.POST("/login", authH.Login)
+		api.GET("/hls/channels", adminH.ListHLS)
 
 		protected := api.Group("", auth)
 		{
