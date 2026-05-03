@@ -48,6 +48,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *services.RedisService, hub *
 	wsH := NewWSHandler(hub, msgH)
 	uploadH := NewUploadHandler()
 	cloudH := NewCloudHandler(db)
+	adminH := NewAdminHandler(db)
 
 	auth := middleware.AuthMiddleware(jwtSecret)
 
@@ -107,6 +108,20 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *services.RedisService, hub *
 	}
 
 	r.GET("/ws", auth, wsH.HandleConnection)
+
+	admin := r.Group("/api/admin")
+	{
+		admin.POST("/login", adminH.Login)
+		admin.GET("/users", adminH.ListUsers)
+		admin.DELETE("/users/:id", adminH.DeleteUser)
+		admin.GET("/groups", adminH.ListGroups)
+		admin.DELETE("/groups/:id", adminH.DeleteGroup)
+		admin.GET("/hls", adminH.ListHLS)
+		admin.POST("/hls", adminH.CreateHLS)
+		admin.DELETE("/hls/:id", adminH.DeleteHLS)
+		admin.GET("/files", adminH.ListFiles)
+		admin.DELETE("/files/:id", adminH.DeleteFile)
+	}
 
 	// Serve React production build (if exists)
 	if _, err := os.Stat("./web-react/dist"); err == nil {

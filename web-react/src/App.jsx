@@ -7,6 +7,8 @@ import ChatWindow from './pages/ChatWindow'
 import GroupChatWindow from './pages/GroupChatWindow'
 import TV from './pages/TV'
 import CloudDisk from './pages/CloudDisk'
+import AdminLogin from './pages/AdminLogin'
+import AdminDashboard from './pages/AdminDashboard'
 
 const PrivateRoute = ({ children }) => {
   const token = useStore(s => s.token)
@@ -23,6 +25,8 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/admin" element={<AdminLogin />} />
+      <Route path="/admin/dashboard" element={<AdminDashboard />} />
       <Route path="/*" element={
         <PrivateRoute>
           <Routes>
