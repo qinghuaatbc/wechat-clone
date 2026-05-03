@@ -92,7 +92,7 @@ export default function TV() {
   return (
     <div className="flex flex-col h-screen max-w-md mx-auto bg-black">
       <header className="flex items-center justify-between px-4 py-3 bg-gray-900 z-10">
-        <button onClick={() => { setPlaying(null); navigate(-1) }} className="text-white p-1"><ArrowLeft size={24} /></button>
+        <button onClick={() => { setPlaying(null); navigate('/', { state: { tab: 'discover' } }) }} className="text-white p-1"><ArrowLeft size={24} /></button>
         <h2 className="text-white font-semibold">{playing ? playing.name : '电视直播'}</h2>
         <div className="w-8" />
       </header>

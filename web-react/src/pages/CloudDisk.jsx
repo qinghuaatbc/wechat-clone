@@ -124,7 +124,7 @@ export default function CloudDisk() {
   return (
     <div className="flex flex-col h-screen max-w-md mx-auto bg-gray-50">
       <header className="flex items-center justify-between px-4 py-3 bg-white border-b z-10">
-        <button onClick={() => navigate(-1)} className="p-1"><ArrowLeft size={24} /></button>
+        <button onClick={() => navigate('/', { state: { tab: 'discover' } })} className="p-1"><ArrowLeft size={24} /></button>
         <h2 className="font-semibold">我的网盘</h2>
         <button onClick={() => fileInputRef.current?.click()} className="p-1.5 bg-wechat-green text-white rounded-lg text-sm flex items-center gap-1">
           <Upload size={16} /> 上传

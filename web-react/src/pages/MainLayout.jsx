@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { MessageSquare, Users, Compass, User, Scan, X } from 'lucide-react'
 import ChatList from '../components/ChatList'
 import Contacts from '../components/Contacts'
@@ -12,7 +13,9 @@ import { useTranslation } from '../hooks/useTranslation'
 
 export default function MainLayout() {
   const { t } = useTranslation()
-  const [activeTab, setActiveTab] = useState('chat')
+  const location = useLocation()
+  const initialTab = location.state?.tab || 'chat'
+  const [activeTab, setActiveTab] = useState(initialTab)
   const [showGroups, setShowGroups] = useState(false)
   const [showQR, setShowQR] = useState(false)
   const [showScanner, setShowScanner] = useState(false)
