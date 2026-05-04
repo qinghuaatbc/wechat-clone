@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Upload, FolderPlus, Folder, File, Download, Trash2, Share2, Globe, Lock, Users, Image, Video, Music, FileText, Archive, Pencil, X, Eye, FileType } from 'lucide-react'
+import { ArrowLeft, Upload, FolderPlus, Folder, File, Download, Trash2, Share2, Globe, Lock, Users, Image, Video, Music, FileText, Archive, Pencil, X, Eye } from 'lucide-react'
 import { useStore } from '../store'
 import { toast } from 'sonner'
+import PreviewModal from '../components/PreviewModal'
 
 const api = (token) => async (url, opts = {}) => {
   const headers = {}
@@ -252,68 +253,17 @@ export default function CloudDisk() {
         )}
       </div>
 
-      {previewFile && (
-        <div className="fixed inset-0 bg-black z-50 flex flex-col" onClick={() => setPreviewFile(null)}>
-          <header className="flex items-center justify-between px-4 py-3 bg-black/80 text-white" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              <Eye size={18} className="flex-shrink-0" />
-              <span className="text-sm font-medium truncate">{previewFile.name}</span>
-            </div>
-            <button onClick={() => setPreviewFile(null)} className="p-1 hover:bg-white/10 rounded flex-shrink-0"><X size={22} /></button>
-          </header>
-          <div className="flex-1 flex items-center justify-center bg-black p-4" onClick={e => e.stopPropagation()}>
-            {(() => {
-              const ext = previewFile.name?.split('.').pop()?.toLowerCase()
-              const isImage = ['jpg','jpeg','png','gif','webp','bmp','svg'].includes(ext)
-              const isVideo = ['mp4','webm','avi','mov','mkv'].includes(ext)
-              const isAudio = ['mp3','wav','ogg','flac','aac'].includes(ext)
-              const is3D = ['glb','gltf'].includes(ext)
-              const isPDF = ext === 'pdf'
-
-              if (isImage) {
-                return <img src={previewFile.path} alt={previewFile.name} className="max-w-full max-h-full object-contain rounded-lg" />
-              }
-              if (isVideo) {
-                return <video src={previewFile.path} controls className="max-w-full max-h-full rounded-lg" autoPlay />
-              }
-              if (isAudio) {
-                return (
-                  <div className="text-center">
-                    <div className="w-24 h-24 rounded-full bg-wechat-green/20 flex items-center justify-center mx-auto mb-6">
-                      <Music size={48} className="text-wechat-green" />
-                    </div>
-                    <audio src={previewFile.path} controls className="w-80 max-w-full" autoPlay />
-                  </div>
-                )
-              }
-              if (is3D) {
-                return (
-                  <model-viewer src={previewFile.path} camera-controls auto-rotate rotation-per-second="60"
-                    interaction-prompt="none" style={{ width: '100%', height: '100%' }}
-                    class="w-full h-full"></model-viewer>
-                )
-              }
-              if (isPDF) {
-                return <iframe src={previewFile.path} className="w-full h-full rounded-lg" title={previewFile.name} />
-              }
-              return (
-                <div className="text-center text-gray-400">
-                  <FileType size={64} className="mx-auto mb-4 opacity-50" />
-                  <p className="text-sm mb-4">该类型暂不支持预览</p>
-                  <button onClick={() => handleDownload(previewFile)}
-                    className="px-6 py-2.5 bg-wechat-green text-white rounded-lg text-sm inline-flex items-center gap-2">
-                    <Download size={16} /> 下载文件
-                  </button>
-                </div>
-              )
-            })()}
-          </div>
-          <div className="flex items-center justify-between px-4 py-3 bg-black/80 text-white text-sm" onClick={e => e.stopPropagation()}>
-            <span className="text-gray-400">{previewFile.type}</span>
-            <span className="text-gray-400">{formatSize(previewFile.size)}</span>
-          </div>
-        </div>
-      )}
+      <PreviewModal
+        open={!!previewFile}
+        file={previewFile ? {
+          name: previewFile.name,
+          url: previewFile.path,
+          type: previewFile.type,
+          size: formatSize(previewFile.size),
+        } : null}
+        onClose={() => setPreviewFile(null)}
+        onDownload={() => handleDownload(previewFile)}
+      />
 
       {showNewFolder && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-6" onClick={() => setShowNewFolder(false)}>

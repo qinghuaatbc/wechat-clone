@@ -2,10 +2,10 @@ package handlers
 
 import (
 	"fmt"
-	"mime"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -26,6 +26,15 @@ func NewLibraryHandler(db *gorm.DB) *LibraryHandler {
 }
 
 func (h *LibraryHandler) ListPublic(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+
 	category := c.Query("category")
 	search := c.Query("search")
 
@@ -37,9 +46,12 @@ func (h *LibraryHandler) ListPublic(c *gin.Context) {
 		query = query.Where("title ILIKE ? OR description ILIKE ?", "%"+search+"%", "%"+search+"%")
 	}
 
+	var total int64
+	query.Count(&total)
+
 	var items []models.LibraryItem
-	query.Order("created_at DESC").Find(&items)
-	c.JSON(http.StatusOK, gin.H{"items": items})
+	query.Order("created_at DESC").Offset((page - 1) * pageSize).Limit(pageSize).Find(&items)
+	c.JSON(http.StatusOK, gin.H{"items": items, "total": total, "page": page, "page_size": pageSize})
 }
 
 func (h *LibraryHandler) GetCategories(c *gin.Context) {
@@ -72,20 +84,8 @@ func (h *LibraryHandler) Download(c *gin.Context) {
 		return
 	}
 	if c.Query("preview") == "1" {
-		data, err := os.ReadFile(cleanPath)
-		if err != nil {
-			c.Status(http.StatusNotFound)
-			return
-		}
-		ext := filepath.Ext(cleanPath)
-		ct := "application/octet-stream"
-		if ext == ".glb" || ext == ".gltf" {
-			ct = "model/gltf-binary"
-		} else if t := mime.TypeByExtension(ext); t != "" {
-			ct = t
-		}
 		c.Header("Content-Disposition", "inline")
-		c.Data(http.StatusOK, ct, data)
+		c.File(cleanPath)
 		return
 	}
 	h.DB.Model(&item).UpdateColumn("downloads", gorm.Expr("downloads + 1"))
