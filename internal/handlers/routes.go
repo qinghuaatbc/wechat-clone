@@ -55,13 +55,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *services.RedisService, hub *
 	examH := NewExamHandler(db)
 	auth := middleware.AuthMiddleware(jwtSecret)
 
-	r.Use(middleware.RateLimit())
-
-	r.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{"status": "ok"})
-	})
-
-	api := r.Group("/api")
+	api := r.Group("/api", middleware.RateLimit())
 	{
 		api.POST("/register", authH.Register)
 		api.POST("/login", authH.Login)
