@@ -29,6 +29,8 @@ export default function ExamList() {
   const [cat, setCat] = useState('')
   const [sub, setSub] = useState('')
   const [catSubs, setCatSubs] = useState([])
+  const [customCat, setCustomCat] = useState(false)
+  const [customSub, setCustomSub] = useState(false)
   const [difficulty, setDifficulty] = useState(1)
   const [qCount, setQCount] = useState(5)
   const [generating, setGenerating] = useState(false)
@@ -184,18 +186,30 @@ export default function ExamList() {
 
             <div className="flex gap-3 mb-3">
               <div className="flex-1">
-                <select value={cat} onChange={e => handleCatChange(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400">
-                  <option value="">选择类别</option>
-                  {catSubs.map(c => <option key={c.category} value={c.category}>{c.category}</option>)}
-                </select>
+                {customCat ? (
+                  <input value={cat} onChange={e => setCat(e.target.value)} placeholder="输入自定义类别" autoFocus
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400" />
+                ) : (
+                  <select value={cat} onChange={e => e.target.value === '__custom__' ? setCustomCat(true) : handleCatChange(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400">
+                    <option value="">选择类别</option>
+                    {catSubs.map(c => <option key={c.category} value={c.category}>{c.category}</option>)}
+                    <option value="__custom__">✏️ 自定义</option>
+                  </select>
+                )}
               </div>
               <div className="flex-1">
-                <select value={sub} onChange={e => setSub(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400" disabled={!cat}>
-                  <option value="">子类别（可选）</option>
-                  {subList.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
+                {customSub ? (
+                  <input value={sub} onChange={e => setSub(e.target.value)} placeholder="输入子类别"
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400" />
+                ) : (
+                  <select value={sub} onChange={e => e.target.value === '__custom__' ? setCustomSub(true) : setSub(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400" disabled={!cat}>
+                    <option value="">子类别（可选）</option>
+                    {subList.map(s => <option key={s} value={s}>{s}</option>)}
+                    <option value="__custom__">✏️ 自定义</option>
+                  </select>
+                )}
               </div>
             </div>
 

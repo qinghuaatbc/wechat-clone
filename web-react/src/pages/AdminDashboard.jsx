@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Users, MessageSquare, Tv, HardDrive, Trash2, Plus, LogOut, BookOpen, Pencil, Search, X, BarChart3, ChevronLeft, User, Shield, FileText, Video, Download, BrainCircuit, Sparkles } from 'lucide-react'
+import { Users, MessageSquare, Tv, HardDrive, Trash2, Plus, LogOut, BookOpen, Pencil, Search, X, BarChart3, ChevronLeft, User, Shield, FileText, Video, Download, BrainCircuit, Sparkles, BookCheck } from 'lucide-react'
 
 const api = async (url, opts = {}) => {
   const res = await fetch(url, {
@@ -97,6 +97,10 @@ export default function AdminDashboard() {
   const [aiGenerating, setAiGenerating] = useState(false)
 
   const [catItems, setCatItems] = useState([])
+  const [aiGenCats, setAiGenCats] = useState([])
+  const [aiGenSubs, setAiGenSubs] = useState([])
+  const [customAiCat, setCustomAiCat] = useState(false)
+  const [customAiSub, setCustomAiSub] = useState(false)
   const [showAddCat, setShowAddCat] = useState(false)
   const [showEditCat, setShowEditCat] = useState(null)
   const [catName, setCatName] = useState('')
@@ -152,6 +156,13 @@ export default function AdminDashboard() {
       setShowAIGen(false); setAiTopic(''); setAiCat(''); setAiSub(''); setAiDifficulty(1); setAiCount(5)
     } catch (e) { alert('生成失败: ' + e.message) }
     setAiGenerating(false)
+  }
+  const openAIGen = async () => {
+    try {
+      const d = await api('/api/admin/categories')
+      setAiGenCats(d.categories || [])
+    } catch {}
+    setShowAIGen(true)
   }
   const delCat = async (id) => { if (!confirm('确定删除该类别？')) return; await api(`/api/admin/categories/${id}`, { method: 'DELETE' }); setCatItems(catItems.filter(c => c.id !== id)) }
   const addCat = async () => {
@@ -462,7 +473,7 @@ export default function AdminDashboard() {
           )}
           {tab === 'exams' && (
             <div>
-              <button onClick={() => setShowAIGen(true)} className="mb-4 px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl text-sm font-medium hover:shadow-lg hover:shadow-purple-500/20 transition-all flex items-center gap-2">
+              <button onClick={openAIGen} className="mb-4 px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl text-sm font-medium hover:shadow-lg hover:shadow-purple-500/20 transition-all flex items-center gap-2">
                 <Sparkles size={16} /> AI生成考试
               </button>
               <Table
@@ -594,10 +605,34 @@ export default function AdminDashboard() {
         <Modal title="AI 生成考试" onClose={() => setShowAIGen(false)}>
           <input value={aiTopic} onChange={e => setAiTopic(e.target.value)} placeholder="考试主题 (如: Go语言并发编程)" autoFocus
             className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 text-white rounded-xl text-sm focus:outline-none focus:border-purple-500/50 mb-3" />
-          <input value={aiCat} onChange={e => setAiCat(e.target.value)} placeholder="类别 (如: 编程/英语/数学)"
-            className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 text-white rounded-xl text-sm focus:outline-none focus:border-purple-500/50 mb-3" />
-          <input value={aiSub} onChange={e => setAiSub(e.target.value)} placeholder="子类别 (可选)"
-            className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 text-white rounded-xl text-sm focus:outline-none focus:border-purple-500/50 mb-3" />
+          <div className="flex gap-3 mb-3">
+            <div className="flex-1">
+              {customAiCat ? (
+                <input value={aiCat} onChange={e => setAiCat(e.target.value)} placeholder="输入自定义类别"
+                  className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 text-white rounded-xl text-sm focus:outline-none focus:border-purple-500/50" />
+              ) : (
+                <select value={aiCat} onChange={e => { if (e.target.value === '__custom__') { setCustomAiCat(true); setAiCat('') } else { setAiCat(e.target.value); setAiSub(''); const f = aiGenCats.find(c => c.name === e.target.value); setAiGenSubs(f ? (Array.isArray(f.sub_categories) ? f.sub_categories : []) : []) }}}
+                  className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 text-white rounded-xl text-sm focus:outline-none focus:border-purple-500/50">
+                  <option value="">选择类别</option>
+                  {aiGenCats.map(c => <option key={c.name || c.id} value={c.name}>{c.name}</option>)}
+                  <option value="__custom__">✏️ 自定义</option>
+                </select>
+              )}
+            </div>
+            <div className="flex-1">
+              {customAiSub ? (
+                <input value={aiSub} onChange={e => setAiSub(e.target.value)} placeholder="输入子类别"
+                  className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 text-white rounded-xl text-sm focus:outline-none focus:border-purple-500/50" />
+              ) : (
+                <select value={aiSub} onChange={e => { if (e.target.value === '__custom__') { setCustomAiSub(true); setAiSub('') } else { setAiSub(e.target.value) }}}
+                  className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 text-white rounded-xl text-sm focus:outline-none focus:border-purple-500/50" disabled={!aiCat}>
+                  <option value="">子类别（可选）</option>
+                  {aiGenSubs.map(s => <option key={s} value={s}>{s}</option>)}
+                  <option value="__custom__">✏️ 自定义</option>
+                </select>
+              )}
+            </div>
+          </div>
           <div className="flex gap-3 mb-5">
             <div className="flex-1">
               <label className="block text-gray-400 text-xs mb-1">难度</label>
