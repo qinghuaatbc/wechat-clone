@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/qinghua/wechat-clone/internal/models"
 	"gorm.io/gorm"
 )
@@ -59,23 +60,57 @@ func (h *MomentHandler) GetFeed(c *gin.Context) {
 		Limit(50).
 		Find(&moments)
 
+	userIDs := []uuid.UUID{}
+	momentIDs := []uint{}
+	for _, m := range moments {
+		userIDs = append(userIDs, m.UserID)
+		momentIDs = append(momentIDs, m.ID)
+	}
+
+	userMap := map[uuid.UUID]models.User{}
+	var users []models.User
+	h.DB.Where("id IN ?", userIDs).Find(&users)
+	for _, u := range users {
+		userMap[u.ID] = u
+	}
+
+	type LikeCount struct {
+		MomentID uint
+		Count    int
+	}
+	var likeCounts []LikeCount
+	h.DB.Model(&models.MomentLike{}).Select("moment_id, count(*) as count").
+		Where("moment_id IN ?", momentIDs).Group("moment_id").Scan(&likeCounts)
+	likeMap := map[uint]int{}
+	for _, lc := range likeCounts {
+		likeMap[lc.MomentID] = lc.Count
+	}
+
+	var commentCounts []LikeCount
+	h.DB.Model(&models.MomentComment{}).Select("moment_id, count(*) as count").
+		Where("moment_id IN ?", momentIDs).Group("moment_id").Scan(&commentCounts)
+	commentMap := map[uint]int{}
+	for _, cc := range commentCounts {
+		commentMap[cc.MomentID] = cc.Count
+	}
+
+	var likedMomentIDs []uint
+	h.DB.Model(&models.MomentLike{}).Where("moment_id IN ? AND user_id = ?", momentIDs, userID).
+		Pluck("moment_id", &likedMomentIDs)
+	likedSet := map[uint]bool{}
+	for _, id := range likedMomentIDs {
+		likedSet[id] = true
+	}
+
 	var resp []MomentResp
 	for _, m := range moments {
-		var user models.User
-		h.DB.First(&user, "id = ?", m.UserID)
-
-		var likeCount, commentCount, isLikedCount int64
-		h.DB.Model(&models.MomentLike{}).Where("moment_id = ?", m.ID).Count(&likeCount)
-		h.DB.Model(&models.MomentComment{}).Where("moment_id = ?", m.ID).Count(&commentCount)
-		h.DB.Model(&models.MomentLike{}).Where("moment_id = ? AND user_id = ?", m.ID, userID).Count(&isLikedCount)
-
 		resp = append(resp, MomentResp{
 			Moment:   m,
-			Nickname: user.Nickname,
-			Avatar:   user.Avatar,
-			Likes:    int(likeCount),
-			Comments: int(commentCount),
-			IsLiked:  isLikedCount > 0,
+			Nickname: userMap[m.UserID].Nickname,
+			Avatar:   userMap[m.UserID].Avatar,
+			Likes:    likeMap[m.ID],
+			Comments: commentMap[m.ID],
+			IsLiked:  likedSet[m.ID],
 		})
 	}
 

@@ -115,11 +115,19 @@ func (h *FriendHandler) GetFriendRequests(c *gin.Context) {
 	query.Order("created_at DESC").Find(&requests)
 
 	var results []FriendRequestInfo
+	userIDs := []uuid.UUID{}
+	userMap := map[uuid.UUID]models.User{}
 	for _, req := range requests {
-		var fromUser, toUser models.User
-		h.DB.First(&fromUser, "id = ?", req.FromID)
-		h.DB.First(&toUser, "id = ?", req.ToID)
-
+		userIDs = append(userIDs, req.FromID, req.ToID)
+	}
+	var users []models.User
+	h.DB.Where("id IN ?", userIDs).Find(&users)
+	for _, u := range users {
+		userMap[u.ID] = u
+	}
+	for _, req := range requests {
+		fromUser := userMap[req.FromID]
+		toUser := userMap[req.ToID]
 		results = append(results, FriendRequestInfo{
 			ID:         req.ID,
 			FromID:     req.FromID,
@@ -193,10 +201,20 @@ func (h *FriendHandler) GetFriends(c *gin.Context) {
 	var friendships []models.Friendship
 	h.DB.Where("user_id = ? AND status = ?", userID, 1).Find(&friendships)
 
+	friendIDs := []uuid.UUID{}
+	for _, fs := range friendships {
+		friendIDs = append(friendIDs, fs.FriendID)
+	}
+	var users []models.User
+	h.DB.Where("id IN ?", friendIDs).Find(&users)
+	userMap := map[uuid.UUID]models.User{}
+	for _, u := range users {
+		userMap[u.ID] = u
+	}
+
 	var friends []FriendInfo
 	for _, fs := range friendships {
-		var u models.User
-		h.DB.First(&u, "id = ?", fs.FriendID)
+		u := userMap[fs.FriendID]
 		friends = append(friends, FriendInfo{
 			ID:       u.ID,
 			Wxid:     u.Wxid,

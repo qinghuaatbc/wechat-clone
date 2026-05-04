@@ -19,7 +19,7 @@ func main() {
 
 	r := gin.Default()
 
-	handlers.SetupRoutes(r, database.DB, redisSvc, hub, cfg.JWTSecret)
+	handlers.SetupRoutes(r, database.DB, redisSvc, hub, cfg.JWTSecret, cfg.AdminUser, cfg.AdminPass)
 
 	log.Printf("server starting on :%s", cfg.Port)
 	if err := r.Run(":" + cfg.Port); err != nil {

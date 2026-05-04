@@ -19,6 +19,8 @@ type Config struct {
 	RedisPass    string
 	JWTSecret    string
 	JWTExpireHrs int
+	AdminUser    string
+	AdminPass    string
 }
 
 func Load() *Config {
@@ -37,6 +39,8 @@ func Load() *Config {
 		RedisPass:    getEnv("REDIS_PASSWORD", ""),
 		JWTSecret:    getEnv("JWT_SECRET", "wechat-clone-secret"),
 		JWTExpireHrs: 168,
+		AdminUser:    getEnv("ADMIN_USER", "admin"),
+		AdminPass:    getEnv("ADMIN_PASS", "admin123"),
 	}
 }
 

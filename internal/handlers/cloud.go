@@ -183,10 +183,19 @@ func (h *CloudHandler) GetShared(c *gin.Context) {
 		Limit(50).
 		Find(&files)
 
+	userIDs := []uuid.UUID{}
+	for _, f := range files {
+		userIDs = append(userIDs, f.UserID)
+	}
+	userMap := map[uuid.UUID]string{}
+	var users []models.User
+	h.DB.Where("id IN ?", userIDs).Find(&users)
+	for _, u := range users {
+		userMap[u.ID] = u.Nickname
+	}
+
 	var results []gin.H
 	for _, f := range files {
-		var owner models.User
-		h.DB.First(&owner, "id = ?", f.UserID)
 		results = append(results, gin.H{
 			"id":         f.ID,
 			"name":       f.Name,
@@ -195,7 +204,7 @@ func (h *CloudHandler) GetShared(c *gin.Context) {
 			"path":       f.Path,
 			"is_dir":     f.IsDir,
 			"owner_id":   f.UserID,
-			"owner_name": owner.Nickname,
+			"owner_name": userMap[f.UserID],
 			"created_at": f.CreatedAt,
 		})
 	}

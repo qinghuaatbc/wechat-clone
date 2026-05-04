@@ -34,7 +34,7 @@ func serveFile(c *gin.Context, baseDir, relPath string) {
 	c.Data(http.StatusOK, ct, data)
 }
 
-func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *services.RedisService, hub *services.WSHub, jwtSecret string) {
+func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *services.RedisService, hub *services.WSHub, jwtSecret, adminUser, adminPass string) {
 	mime.AddExtensionType(".glb", "model/gltf-binary")
 	mime.AddExtensionType(".gltf", "model/gltf+json")
 	mime.AddExtensionType(".obj", "text/plain")
@@ -48,7 +48,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *services.RedisService, hub *
 	wsH := NewWSHandler(hub, msgH)
 	uploadH := NewUploadHandler()
 	cloudH := NewCloudHandler(db)
-	adminH := NewAdminHandler(db)
+	adminH := NewAdminHandler(db, adminUser, adminPass)
 
 	libraryH := NewLibraryHandler(db)
 	albumH := NewAlbumHandler(db)

@@ -9,20 +9,19 @@ import (
 	"gorm.io/gorm"
 )
 
-const adminUser = "admin"
-const adminPass = "admin"
-
 type AdminHandler struct {
-	DB *gorm.DB
+	DB        *gorm.DB
+	AdminUser string
+	AdminPass string
 }
 
-func NewAdminHandler(db *gorm.DB) *AdminHandler {
-	return &AdminHandler{DB: db}
+func NewAdminHandler(db *gorm.DB, adminUser, adminPass string) *AdminHandler {
+	return &AdminHandler{DB: db, AdminUser: adminUser, AdminPass: adminPass}
 }
 
-func adminAuth(c *gin.Context) bool {
+func (h *AdminHandler) adminAuth(c *gin.Context) bool {
 	user, pass, hasAuth := c.Request.BasicAuth()
-	return hasAuth && user == adminUser && pass == adminPass
+	return hasAuth && user == h.AdminUser && pass == h.AdminPass
 }
 
 func (h *AdminHandler) Login(c *gin.Context) {
@@ -34,7 +33,7 @@ func (h *AdminHandler) Login(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid"})
 		return
 	}
-	if req.User == adminUser && req.Pass == adminPass {
+	if req.User == h.AdminUser && req.Pass == h.AdminPass {
 		c.JSON(http.StatusOK, gin.H{"token": "admin-token"})
 		return
 	}
@@ -59,19 +58,15 @@ func (h *AdminHandler) DeleteUser(c *gin.Context) {
 }
 
 func (h *AdminHandler) ListGroups(c *gin.Context) {
-	var groups []models.Group
-	h.DB.Order("created_at DESC").Find(&groups)
-
 	type GroupRow struct {
 		models.Group
 		MemberCount int `json:"member_count"`
 	}
 	var result []GroupRow
-	for _, g := range groups {
-		var cnt int64
-		h.DB.Model(&models.GroupMember{}).Where("group_id = ?", g.ID).Count(&cnt)
-		result = append(result, GroupRow{Group: g, MemberCount: int(cnt)})
-	}
+	h.DB.Model(&models.Group{}).
+		Select("groups.*, (SELECT count(*) FROM group_members WHERE group_members.group_id = groups.id) as member_count").
+		Order("created_at DESC").
+		Scan(&result)
 	c.JSON(http.StatusOK, gin.H{"groups": result})
 }
 
