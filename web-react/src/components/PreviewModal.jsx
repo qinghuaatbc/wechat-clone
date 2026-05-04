@@ -8,6 +8,13 @@ export default function PreviewModal({ open, file, onClose, onDownload }) {
   const pdfTimerRef = useRef(null)
   const modelRef = useRef(null)
 
+  const ext = file?.name?.split('.').pop()?.toLowerCase()
+  const isImage = ['jpg','jpeg','png','gif','webp','bmp','svg'].includes(ext)
+  const isVideo = ['mp4','webm','avi','mov','mkv'].includes(ext)
+  const isAudio = ['mp3','wav','ogg','flac','aac'].includes(ext)
+  const is3D = ['glb','gltf'].includes(ext)
+  const isPDF = ext === 'pdf'
+
   useEffect(() => {
     if (!open) {
       setLoading(true)
@@ -19,22 +26,30 @@ export default function PreviewModal({ open, file, onClose, onDownload }) {
   }, [open, file?.url])
 
   useEffect(() => {
-    if (!open || !file) return
+    if (!open) return
     return () => {
       if (pdfTimerRef.current) clearTimeout(pdfTimerRef.current)
     }
-  }, [open, file])
+  }, [open])
+
+  useEffect(() => {
+    if (!isPDF || !open) return
+    pdfTimerRef.current = setTimeout(() => {
+      setPdfError(true)
+      setLoading(false)
+    }, 10000)
+    return () => { if (pdfTimerRef.current) clearTimeout(pdfTimerRef.current) }
+  }, [isPDF, open])
+
+  useEffect(() => {
+    if (!is3D || !modelRef.current || !open) return
+    const el = modelRef.current
+    const onLoad = () => setLoading(false)
+    el.addEventListener('load', onLoad)
+    return () => el.removeEventListener('load', onLoad)
+  }, [is3D, open])
 
   if (!open || !file) return null
-
-  const ext = file.name?.split('.').pop()?.toLowerCase()
-  const isImage = ['jpg','jpeg','png','gif','webp','bmp','svg'].includes(ext)
-  const isVideo = ['mp4','webm','avi','mov','mkv'].includes(ext)
-  const isAudio = ['mp3','wav','ogg','flac','aac'].includes(ext)
-  const is3D = ['glb','gltf'].includes(ext)
-  const isPDF = ext === 'pdf'
-
-  const handleLoad = () => setLoading(false)
 
   const handleIframeLoad = () => {
     setLoading(false)
@@ -46,42 +61,21 @@ export default function PreviewModal({ open, file, onClose, onDownload }) {
     } catch {}
   }
 
-  const handleModelLoad = () => {
-    setLoading(false)
-  }
-
-  useEffect(() => {
-    if (!isPDF || !open) return
-    pdfTimerRef.current = setTimeout(() => {
-      if (loading) {
-        setPdfError(true)
-        setLoading(false)
-      }
-    }, 10000)
-    return () => { if (pdfTimerRef.current) clearTimeout(pdfTimerRef.current) }
-  }, [isPDF, open])
-
-  useEffect(() => {
-    if (!is3D || !modelRef.current || !open) return
-    modelRef.current.addEventListener('load', handleModelLoad)
-    return () => modelRef.current?.removeEventListener('load', handleModelLoad)
-  }, [is3D, open])
-
   const renderContent = () => {
     if (isImage) {
-      return <img src={file.url} alt={file.name} onLoad={handleLoad} onError={() => setLoading(false)} className="max-w-full max-h-full object-contain rounded-lg" />
+      return <img src={file.url} alt={file.name} onLoad={() => setLoading(false)} onError={() => setLoading(false)} className="max-w-full max-h-full object-contain rounded-lg" />
     }
     if (isVideo) {
-      return <video src={file.url} controls onCanPlay={handleLoad} onError={() => setLoading(false)} className="max-w-full max-h-full rounded-lg" autoPlay />
+      return <video src={file.url} controls onCanPlay={() => setLoading(false)} onError={() => setLoading(false)} className="max-w-full max-h-full rounded-lg" autoPlay />
     }
     if (isAudio) {
       return (
-        <div className="text-center" onLoad={handleLoad}>
+        <div className="text-center">
           <div className="w-24 h-24 rounded-full bg-wechat-green/20 flex items-center justify-center mx-auto mb-6">
             <Music size={48} className="text-wechat-green" />
           </div>
           <p className="text-white text-sm mb-4">{file.name}</p>
-          <audio src={file.url} controls onCanPlay={handleLoad} onError={() => setLoading(false)} className="w-80 max-w-full" autoPlay />
+          <audio src={file.url} controls onCanPlay={() => setLoading(false)} onError={() => setLoading(false)} className="w-80 max-w-full" autoPlay />
         </div>
       )
     }
