@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"mime"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -71,7 +72,20 @@ func (h *LibraryHandler) Download(c *gin.Context) {
 		return
 	}
 	if c.Query("preview") == "1" {
-		c.File(cleanPath)
+		data, err := os.ReadFile(cleanPath)
+		if err != nil {
+			c.Status(http.StatusNotFound)
+			return
+		}
+		ext := filepath.Ext(cleanPath)
+		ct := "application/octet-stream"
+		if ext == ".glb" || ext == ".gltf" {
+			ct = "model/gltf-binary"
+		} else if t := mime.TypeByExtension(ext); t != "" {
+			ct = t
+		}
+		c.Header("Content-Disposition", "inline")
+		c.Data(http.StatusOK, ct, data)
 		return
 	}
 	h.DB.Model(&item).UpdateColumn("downloads", gorm.Expr("downloads + 1"))

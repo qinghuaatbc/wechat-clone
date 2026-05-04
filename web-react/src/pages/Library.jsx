@@ -141,6 +141,7 @@ export default function Library() {
               const isImage = ['jpg','jpeg','png','gif','webp','bmp','svg'].includes(ext)
               const isVideo = ['mp4','webm','avi','mov','mkv'].includes(ext)
               const isAudio = ['mp3','wav','ogg','flac','aac'].includes(ext)
+              const is3D = ['glb','gltf'].includes(ext)
               const isPDF = ext === 'pdf'
               const url = previewUrl(previewItem)
 
@@ -160,6 +161,11 @@ export default function Library() {
                     <audio src={url} controls className="w-80 max-w-full" autoPlay />
                   </div>
                 )
+              }
+              if (is3D) {
+                return <model-viewer src={url} camera-controls auto-rotate rotation-per-second="60"
+                  interaction-prompt="none" style={{ width: '100%', height: '100%' }}
+                  className="w-full h-full" />
               }
               if (isPDF) {
                 return <iframe src={url} className="w-full h-full rounded-lg" title={previewItem.title} />
