@@ -60,6 +60,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *services.RedisService, hub *
 		api.POST("/register", authH.Register)
 		api.POST("/login", authH.Login)
 		api.GET("/hls/channels", adminH.ListHLS)
+		api.GET("/hls/proxy", ProxyHLS)
 		api.GET("/library", libraryH.ListPublic)
 		api.GET("/library/categories", libraryH.GetCategories)
 		api.GET("/library/:id/download", libraryH.Download)

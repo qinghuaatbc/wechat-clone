@@ -39,11 +39,15 @@ export default function TV() {
     setError(null)
     if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null }
 
+    const playUrl = playing.url.startsWith('http://')
+      ? '/api/hls/proxy?url=' + encodeURIComponent(playing.url)
+      : playing.url
+
     import('hls.js').then(mod => {
       const Hls = mod.default
       if (Hls.isSupported()) {
         const hls = new Hls()
-        hls.loadSource(playing.url)
+        hls.loadSource(playUrl)
         hls.attachMedia(videoRef.current)
         hls.on(Hls.Events.ERROR, (e, data) => {
           if (data.fatal) setError('播放失败: ' + (data.type === 'networkError' ? '网络错误，请尝试其他频道' : '格式错误'))
@@ -51,7 +55,7 @@ export default function TV() {
         hlsRef.current = hls
         videoRef.current.play().catch(() => {})
       } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
-        videoRef.current.src = playing.url
+        videoRef.current.src = playUrl
         videoRef.current.play().catch(() => {})
       } else {
         setError('浏览器不支持HLS播放，请使用Safari或Chrome')
