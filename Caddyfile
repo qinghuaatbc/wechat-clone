@@ -1,0 +1,7 @@
+{
+    admin off
+}
+
+mo-language.com {
+    reverse_proxy app:8080
+}

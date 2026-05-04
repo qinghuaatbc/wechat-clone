@@ -1,0 +1,9 @@
+{
+  "appId": "com.wechatclone.app",
+  "appName": "WeChat Clone",
+  "webDir": "dist",
+  "server": {
+    "url": "https://mo-language.com",
+    "cleartext": true
+  }
+}

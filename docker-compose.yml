@@ -40,7 +40,20 @@ services:
     volumes:
       - uploads_data:/app/uploads
 
+  caddy:
+    image: caddy:2-alpine
+    container_name: wechat-caddy
+    restart: always
+    ports:
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+    depends_on:
+      - app
+
 volumes:
   postgres_data:
   redis_data:
   uploads_data:
+  caddy_data:
