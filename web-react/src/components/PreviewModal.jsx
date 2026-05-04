@@ -3,9 +3,7 @@ import { X, Download, FileType, Music } from 'lucide-react'
 
 export default function PreviewModal({ open, file, onClose, onDownload }) {
   const [loading, setLoading] = useState(true)
-  const [pdfError, setPdfError] = useState(false)
   const iframeRef = useRef(null)
-  const pdfTimerRef = useRef(null)
   const modelRef = useRef(null)
 
   const ext = file?.name?.split('.').pop()?.toLowerCase()
@@ -16,30 +14,8 @@ export default function PreviewModal({ open, file, onClose, onDownload }) {
   const isPDF = ext === 'pdf'
 
   useEffect(() => {
-    if (!open) {
-      setLoading(true)
-      setPdfError(false)
-      return
-    }
     setLoading(true)
-    setPdfError(false)
   }, [open, file?.url])
-
-  useEffect(() => {
-    if (!open) return
-    return () => {
-      if (pdfTimerRef.current) clearTimeout(pdfTimerRef.current)
-    }
-  }, [open])
-
-  useEffect(() => {
-    if (!isPDF || !open) return
-    pdfTimerRef.current = setTimeout(() => {
-      setPdfError(true)
-      setLoading(false)
-    }, 10000)
-    return () => { if (pdfTimerRef.current) clearTimeout(pdfTimerRef.current) }
-  }, [isPDF, open])
 
   useEffect(() => {
     if (!is3D || !modelRef.current || !open) return
@@ -50,16 +26,6 @@ export default function PreviewModal({ open, file, onClose, onDownload }) {
   }, [is3D, open])
 
   if (!open || !file) return null
-
-  const handleIframeLoad = () => {
-    setLoading(false)
-    try {
-      const doc = iframeRef.current?.contentDocument || iframeRef.current?.contentWindow?.document
-      if (!doc || doc.body?.innerHTML === '' || doc.body?.children?.length === 0) {
-        setPdfError(true)
-      }
-    } catch {}
-  }
 
   const renderContent = () => {
     if (isImage) {
@@ -87,23 +53,8 @@ export default function PreviewModal({ open, file, onClose, onDownload }) {
       )
     }
     if (isPDF) {
-      if (pdfError) {
-        return (
-          <div className="text-center text-gray-400">
-            <FileType size={64} className="mx-auto mb-4 opacity-50" />
-            <p className="text-sm mb-2">PDF 加载较慢或浏览器不支持内嵌预览</p>
-            <p className="text-xs text-gray-500 mb-4">请尝试下载后查看</p>
-            {onDownload && (
-              <button onClick={onDownload}
-                className="px-6 py-2.5 bg-wechat-green text-white rounded-lg text-sm inline-flex items-center gap-2">
-                <Download size={16} /> 下载文件
-              </button>
-            )}
-          </div>
-        )
-      }
       return (
-        <iframe ref={iframeRef} src={file.url} onLoad={handleIframeLoad}
+        <iframe ref={iframeRef} src={file.url} onLoad={() => setLoading(false)}
           className="w-full h-full rounded-lg" title={file.name} />
       )
     }
