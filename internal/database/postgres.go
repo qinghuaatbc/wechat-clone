@@ -40,6 +40,7 @@ func Connect(cfg *config.Config) {
 		&models.ExamQuestion{},
 		&models.ExamAttempt{},
 		&models.ExamAnswer{},
+		&models.Category{},
 	); err != nil {
 		log.Fatal("failed to migrate database:", err)
 	}
@@ -47,6 +48,7 @@ func Connect(cfg *config.Config) {
 	log.Println("database connected and migrated")
 
 	seedHLSChannels(DB)
+	seedCategories(DB)
 }
 
 func seedHLSChannels(db *gorm.DB) {
@@ -74,6 +76,25 @@ func seedHLSChannels(db *gorm.DB) {
 		db.Create(&ch)
 	}
 	log.Printf("seeded %d HLS channels", len(channels))
+}
+
+func seedCategories(db *gorm.DB) {
+	var cnt int64
+	db.Model(&models.Category{}).Count(&cnt)
+	if cnt > 0 {
+		return
+	}
+	cats := []models.Category{
+		{Name: "编程", SubCategories: `["Go","Python","JavaScript","Rust","Java","C++"]`, SortOrder: 1},
+		{Name: "语言", SubCategories: `["英语","日语","法语","德语","韩语"]`, SortOrder: 2},
+		{Name: "数学", SubCategories: `["代数","几何","微积分","概率论","线性代数"]`, SortOrder: 3},
+		{Name: "科学", SubCategories: `["物理","化学","生物","天文","地理"]`, SortOrder: 4},
+		{Name: "工具", SubCategories: `["Docker","Linux","Git","Kubernetes","数据库"]`, SortOrder: 5},
+	}
+	for _, c := range cats {
+		db.Create(&c)
+	}
+	log.Printf("seeded %d categories", len(cats))
 }
 
 func InitRedis(cfg *config.Config) *services.RedisService {

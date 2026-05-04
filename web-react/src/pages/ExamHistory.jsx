@@ -32,13 +32,14 @@ export default function ExamHistory() {
         <h2 className="font-semibold">考试历史</h2>
       </header>
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
-        {attempts.length === 0 ? (
+          {attempts.length === 0 ? (
           <div className="flex flex-col items-center py-20 text-gray-400">
             <BookCheck size={48} className="opacity-50" />
             <p className="mt-2 text-sm">暂无考试记录</p>
           </div>
         ) : attempts.map(a => (
-          <div key={a.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <div key={a.id} onClick={() => a.status === 'completed' && navigate(`/exam/result/${a.id}`)}
+            className={`bg-white rounded-xl p-4 shadow-sm border border-gray-100 ${a.status === 'completed' ? 'cursor-pointer hover:shadow-md transition' : ''}`}>
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm text-gray-900 truncate">{a.exam?.title || '考试'}</p>

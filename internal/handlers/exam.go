@@ -44,27 +44,15 @@ func (h *ExamHandler) ListExams(c *gin.Context) {
 }
 
 func (h *ExamHandler) GetCategories(c *gin.Context) {
-	var cats []struct {
-		Category    string
-		SubCategory string
-		Count       int
-	}
-	h.DB.Model(&models.Exam{}).
-		Select("category, sub_category, count(*) as count").
-		Group("category, sub_category").
-		Order("category ASC").
-		Scan(&cats)
+	var cats []models.Category
+	h.DB.Order("sort_order ASC, name ASC").Find(&cats)
 
-	grouped := map[string][]gin.H{}
-	for _, c := range cats {
-		key := c.Category
-		grouped[key] = append(grouped[key], gin.H{
-			"sub_category": c.SubCategory, "count": c.Count,
-		})
-	}
 	var result []gin.H
-	for k, v := range grouped {
-		result = append(result, gin.H{"category": k, "sub_categories": v})
+	for _, c := range cats {
+		result = append(result, gin.H{
+			"category":       c.Name,
+			"sub_categories": c.GetSubs(),
+		})
 	}
 	c.JSON(http.StatusOK, gin.H{"categories": result})
 }
@@ -111,7 +99,7 @@ func (h *ExamHandler) SubmitAttempt(c *gin.Context) {
 	userID := getUserID(c)
 	var attempt models.ExamAttempt
 	if err := h.DB.First(&attempt, "id = ? AND user_id = ? AND status = ?",
-		c.Param("aid"), userID, "in_progress").Error; err != nil {
+		c.Param("id"), userID, "in_progress").Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "attempt not found or already submitted"})
 		return
 	}
@@ -186,6 +174,21 @@ func (h *ExamHandler) SubmitAttempt(c *gin.Context) {
 	})
 }
 
+func (h *ExamHandler) CancelAttempt(c *gin.Context) {
+	userID := getUserID(c)
+	var attempt models.ExamAttempt
+	if err := h.DB.First(&attempt, "id = ? AND user_id = ? AND status = ?",
+		c.Param("id"), userID, "in_progress").Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "not found or already completed"})
+		return
+	}
+	now := time.Now()
+	attempt.Status = "canceled"
+	attempt.CompletedAt = &now
+	h.DB.Save(&attempt)
+	c.JSON(http.StatusOK, gin.H{"message": "canceled"})
+}
+
 func (h *ExamHandler) PeekAttempt(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "ok", "peeked": true})
 }
@@ -200,11 +203,23 @@ func (h *ExamHandler) GetHistory(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"attempts": attempts})
 }
 
+func (h *ExamHandler) DeleteMyExam(c *gin.Context) {
+	var exam models.Exam
+	if err := h.DB.First(&exam, "id = ?", c.Param("id")).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "exam not found"})
+		return
+	}
+	h.DB.Where("exam_id = ?", exam.ID).Delete(&models.ExamQuestion{})
+	h.DB.Where("exam_id = ?", exam.ID).Delete(&models.ExamAttempt{})
+	h.DB.Delete(&exam)
+	c.JSON(http.StatusOK, gin.H{"message": "deleted"})
+}
+
 func (h *ExamHandler) GetAttempt(c *gin.Context) {
 	userID := getUserID(c)
 	var attempt models.ExamAttempt
 	if err := h.DB.Preload("Answers").Preload("Exam.Questions").
-		First(&attempt, "id = ? AND user_id = ?", c.Param("aid"), userID).Error; err != nil {
+		First(&attempt, "id = ? AND user_id = ?", c.Param("id"), userID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 		return
 	}
@@ -227,6 +242,65 @@ type QuestionInput struct {
 	Options       []string `json:"options"`
 	CorrectAnswer int      `json:"correct_answer"`
 	Explanation   string   `json:"explanation"`
+}
+
+func (h *ExamHandler) GenerateCustomExam(c *gin.Context) {
+	userID := getUserID(c)
+	var req struct {
+		Topic       string `json:"topic" binding:"required"`
+		Category    string `json:"category" binding:"required"`
+		SubCategory string `json:"sub_category"`
+		Difficulty  int    `json:"difficulty"`
+		Count       int    `json:"count"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if req.Count < 1 || req.Count > 20 {
+		req.Count = 5
+	}
+	if req.Difficulty < 1 || req.Difficulty > 3 {
+		req.Difficulty = 1
+	}
+
+	questions, err := h.AI.GenerateQuestions(services.GenerateQuestionsReq{
+		Topic:       req.Topic,
+		Category:    req.Category,
+		SubCategory: req.SubCategory,
+		Difficulty:  req.Difficulty,
+		Count:       req.Count,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	exam := models.Exam{
+		Title:       req.Topic,
+		Description: fmt.Sprintf("自定义%s考试，主题：%s", req.Category, req.Topic),
+		Category:    req.Category,
+		SubCategory: req.SubCategory,
+		Difficulty:  req.Difficulty,
+		QuestionCnt: len(questions),
+		CreatedBy:   userID,
+	}
+	h.DB.Create(&exam)
+
+	for i, q := range questions {
+		opts, _ := json.Marshal(q.Options)
+		h.DB.Create(&models.ExamQuestion{
+			ExamID:        exam.ID,
+			Question:      q.Question,
+			Options:       string(opts),
+			CorrectAnswer: q.CorrectAnswer,
+			Explanation:   q.Explanation,
+			OrderNum:      i + 1,
+		})
+	}
+
+	h.DB.Preload("Questions").First(&exam, exam.ID)
+	c.JSON(http.StatusOK, gin.H{"exam": exam})
 }
 
 func (h *ExamHandler) AdminGenerate(c *gin.Context) {
@@ -378,4 +452,71 @@ func (h *ExamHandler) AdminList(c *gin.Context) {
 	var exams []models.Exam
 	h.DB.Order("created_at DESC").Find(&exams)
 	c.JSON(http.StatusOK, gin.H{"exams": exams})
+}
+
+func (h *ExamHandler) AdminListCategories(c *gin.Context) {
+	var cats []models.Category
+	h.DB.Order("sort_order ASC, name ASC").Find(&cats)
+	c.JSON(http.StatusOK, gin.H{"categories": cats})
+}
+
+func (h *ExamHandler) AdminCreateCategory(c *gin.Context) {
+	var req struct {
+		Name          string `json:"name" binding:"required"`
+		SubCategories string `json:"sub_categories"`
+		SortOrder     int    `json:"sort_order"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if req.SubCategories == "" {
+		req.SubCategories = "[]"
+	}
+	cat := models.Category{
+		Name:          req.Name,
+		SubCategories: req.SubCategories,
+		SortOrder:     req.SortOrder,
+	}
+	if err := h.DB.Create(&cat).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "create failed"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"category": cat})
+}
+
+func (h *ExamHandler) AdminUpdateCategory(c *gin.Context) {
+	id := c.Param("id")
+	var cat models.Category
+	if err := h.DB.First(&cat, "id = ?", id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+		return
+	}
+	var req struct {
+		Name          string `json:"name"`
+		SubCategories string `json:"sub_categories"`
+		SortOrder     int    `json:"sort_order"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	updates := map[string]interface{}{}
+	if req.Name != "" {
+		updates["name"] = req.Name
+	}
+	if req.SubCategories != "" {
+		updates["sub_categories"] = req.SubCategories
+	}
+	if req.SortOrder > 0 {
+		updates["sort_order"] = req.SortOrder
+	}
+	h.DB.Model(&cat).Updates(updates)
+	c.JSON(http.StatusOK, gin.H{"category": cat})
+}
+
+func (h *ExamHandler) AdminDeleteCategory(c *gin.Context) {
+	id := c.Param("id")
+	h.DB.Delete(&models.Category{}, "id = ?", id)
+	c.JSON(http.StatusOK, gin.H{"message": "deleted"})
 }

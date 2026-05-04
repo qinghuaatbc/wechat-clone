@@ -13,6 +13,7 @@ import Album from './pages/Album'
 import ExamList from './pages/ExamList'
 import ExamTake from './pages/ExamTake'
 import ExamHistory from './pages/ExamHistory'
+import ExamResult from './pages/ExamResult'
 import AdminLogin from './pages/AdminLogin'
 import AdminDashboard from './pages/AdminDashboard'
 
@@ -47,6 +48,7 @@ export default function App() {
             <Route path="/exam" element={<ExamList />} />
             <Route path="/exam/:id" element={<ExamTake />} />
             <Route path="/exam/history" element={<ExamHistory />} />
+            <Route path="/exam/result/:id" element={<ExamResult />} />
           </Routes>
         </PrivateRoute>
       } />

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Flag, Send, Eye, EyeOff, AlertTriangle, CheckCircle } from 'lucide-react'
+import { ArrowLeft, Flag, Send, Eye, EyeOff, AlertTriangle, CheckCircle, XCircle, Download, Award } from 'lucide-react'
 import { useStore } from '../store'
 import { toast } from 'sonner'
 
@@ -18,6 +18,7 @@ export default function ExamTake() {
   const { id } = useParams()
   const navigate = useNavigate()
   const token = useStore(s => s.token)
+  const user = useStore(s => s.user)
   const request = useCallback((url, opts) => api(token)(url, opts), [token])
 
   const [exam, setExam] = useState(null)
@@ -27,6 +28,7 @@ export default function ExamTake() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [result, setResult] = useState(null)
+  const [resultAnswers, setResultAnswers] = useState(null)
   const [peekReveal, setPeekReveal] = useState({})
 
   useEffect(() => {
@@ -64,9 +66,20 @@ export default function ExamTake() {
         method: 'POST',
         body: JSON.stringify({ answers: ansList })
       })
+      if (!d?.analysis) { toast.error('提交返回数据异常'); setSubmitting(false); return }
       setResult(d)
+      setResultAnswers(ansList)
+      setSubmitting(false)
+    } catch (e) { toast.error(e.message); setSubmitting(false) }
+  }
+
+  const cancelExam = async () => {
+    if (!confirm('确定取消考试？进度将丢失。')) return
+    try {
+      await request(`/api/exams/${attempt.id}/cancel`, { method: 'POST' })
+      toast.success('考试已取消')
+      navigate('/exam')
     } catch (e) { toast.error(e.message) }
-    setSubmitting(false)
   }
 
   if (loading) {
@@ -74,10 +87,66 @@ export default function ExamTake() {
   }
   if (!exam) return null
 
-  if (result) {
+  if (result?.analysis) {
     const a = result.analysis
     const grade = a.score_pct >= 90 ? 'A' : a.score_pct >= 80 ? 'B' : a.score_pct >= 70 ? 'C' : a.score_pct >= 60 ? 'D' : 'F'
     const pass = a.score_pct >= 60
+
+    const generateCertificate = () => {
+      const win = window.open('', '_blank')
+      const date = new Date().toLocaleDateString('zh-CN')
+      const avatarUrl = user?.avatar || ''
+      const userName = user?.nickname || '考生'
+      win.document.write(`
+        <!DOCTYPE html>
+        <html><head><meta charset="utf-8"><title>考试证书</title>
+        <style>
+          @page { margin: 0 }
+          body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+            font-family: 'Georgia', 'Times New Roman', serif;
+            background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 50%, #f5f3ff 100%); }
+          .cert { width: 700px; padding: 50px; background: white; border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1); text-align: center;
+            border: 3px solid #7c3aed; position: relative; margin: 40px auto; }
+          .cert::before { content: ''; position: absolute; top: 10px; left: 10px; right: 10px; bottom: 10px;
+            border: 1px solid #ddd6fe; border-radius: 14px; pointer-events: none; }
+          .avatar { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #7c3aed; margin-bottom: 15px; }
+          .avatar-placeholder { width: 80px; height: 80px; border-radius: 50%; background: #7c3aed; color: white;
+            display: inline-flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; margin-bottom: 15px; }
+          h1 { color: #4c1d95; font-size: 28px; margin: 5px 0; letter-spacing: 4px; }
+          .subtitle { color: #7c3aed; font-size: 14px; letter-spacing: 6px; margin-bottom: 25px; }
+          .name { font-size: 32px; color: #1f2937; font-weight: bold; margin: 15px 0;
+            border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; display: inline-block; }
+          .detail { color: #6b7280; font-size: 14px; line-height: 2; }
+          .detail strong { color: #4c1d95; }
+          .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;
+            display: flex; justify-content: space-between; font-size: 12px; color: #9ca3af; }
+        </style></head><body>
+        <div class="cert">
+          ${avatarUrl
+            ? `<img src="${avatarUrl}" class="avatar" alt="avatar" onerror="this.style.display='none'"/>`
+            : `<div class="avatar-placeholder">${userName[0]}</div>`
+          }
+          <h1>考试证书</h1>
+          <p class="subtitle">CERTIFICATE OF COMPLETION</p>
+          <div class="name">${userName}</div>
+          <div class="detail">
+            <p>考试科目: <strong>${exam.title}</strong></p>
+            <p>成绩等级: <strong>${grade}</strong></p>
+            <p>正确率: <strong>${a.score_pct}%</strong> (${a.correct}/${a.total})</p>
+            <p>考试日期: ${date}</p>
+          </div>
+          <div class="footer">
+            <span>AI考试系统</span>
+            <span>${date}</span>
+            <span>证书编号: ${Date.now().toString(36).toUpperCase()}</span>
+          </div>
+        </div>
+        <script>window.print()</script>
+        </body></html>
+      `)
+      win.document.close()
+    }
 
     return (
       <div className="flex flex-col h-screen max-w-md mx-auto bg-gradient-to-b from-purple-50 via-white to-purple-50/30">
@@ -97,18 +166,53 @@ export default function ExamTake() {
               <div><p className="text-2xl font-bold text-green-600">{a.correct}</p><p className="text-xs text-gray-400">答对</p></div>
               <div><p className="text-2xl font-bold text-gray-600">{a.total}</p><p className="text-xs text-gray-400">总题</p></div>
             </div>
+            {pass && (
+              <button onClick={generateCertificate}
+                className="mt-4 px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl text-sm font-medium hover:shadow-lg transition inline-flex items-center gap-2">
+                <Award size={16} /> 下载证书
+              </button>
+            )}
           </div>
 
-          {a.weak_areas?.length > 0 && (
-            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-              <h4 className="font-semibold text-sm mb-2 flex items-center gap-1"><AlertTriangle size={16} className="text-orange-500" /> 薄弱环节</h4>
-              <div className="space-y-1.5">
-                {a.weak_areas.map((w, i) => (
-                  <p key={i} className="text-xs text-gray-600 bg-orange-50 px-3 py-1.5 rounded-lg">{i+1}. {w}</p>
-                ))}
+          <h4 className="font-semibold text-sm flex items-center gap-1"><CheckCircle size={16} className="text-purple-500" /> 逐题分析</h4>
+          {(exam.questions || []).map((q, qi) => {
+            let opts = []
+            try { opts = JSON.parse(q.options) } catch {}
+            const userAns = resultAnswers?.find(a => a.question_id === q.id)?.selected
+            const correct = userAns === q.correct_answer
+            return (
+              <div key={q.id} className={`bg-white rounded-2xl p-4 shadow-sm border ${correct ? 'border-green-200' : 'border-red-200'}`}>
+                <div className="flex items-start gap-2">
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 text-xs text-white ${
+                    correct ? 'bg-green-500' : 'bg-red-500'
+                  }`}>{correct ? '✓' : '✗'}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900">{q.question}</p>
+                    <div className="mt-2 space-y-1">
+                      {opts.map((opt, oi) => {
+                        const isCorrectOpt = oi === q.correct_answer
+                        const isUserOpt = oi === userAns
+                        let cls = 'border-gray-100 bg-gray-50 text-gray-500'
+                        if (isCorrectOpt) cls = 'border-green-300 bg-green-50 text-green-700'
+                        if (isUserOpt && !isCorrectOpt) cls = 'border-red-300 bg-red-50 text-red-600'
+                        return (
+                          <div key={oi} className={`px-3 py-2 rounded-xl text-sm border ${cls}`}>
+                            <span className="font-mono mr-2 text-xs">{String.fromCharCode(65+oi)}.</span>
+                            {opt}
+                            {isCorrectOpt && <CheckCircle size={12} className="inline ml-1 text-green-500" />}
+                            {isUserOpt && !isCorrectOpt && <XCircle size={12} className="inline ml-1 text-red-500" />}
+                          </div>
+                        )
+                      })}
+                    </div>
+                    <p className="mt-2 text-xs text-gray-500 bg-gray-50 px-3 py-2 rounded-lg">
+                      <span className="font-medium text-gray-700">解析：</span>{q.explanation || '无解析'}
+                    </p>
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
+            )
+          })}
 
           <button onClick={() => navigate('/exam')}
             className="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition">
@@ -122,9 +226,9 @@ export default function ExamTake() {
   return (
     <div className="flex flex-col h-screen max-w-md mx-auto bg-gray-50">
       <header className="px-4 py-3 bg-white border-b flex items-center justify-between">
-        <button onClick={() => { if (!started || confirm('退出将丢失进度?')) navigate('/exam') }} className="p-1"><ArrowLeft size={24} /></button>
-        <h2 className="font-semibold text-sm truncate">{exam.title}</h2>
-        {started && <span className="text-xs text-gray-500">{Object.keys(answers).length}/{exam.questions?.length || 0}</span>}
+            <button onClick={() => { if (!started || confirm('退出将丢失进度?')) navigate('/exam') }} className="p-1"><ArrowLeft size={24} /></button>
+            <h2 className="font-semibold text-sm truncate">{exam.title}</h2>
+            {started && <div className="flex items-center gap-2"><span className="text-xs text-gray-500">{Object.keys(answers).length}/{exam.questions?.length || 0}</span><button onClick={cancelExam} className="text-xs text-red-500 hover:text-red-700">取消</button></div>}
         {!started && <div className="w-8" />}
       </header>
 
