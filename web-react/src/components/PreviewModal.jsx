@@ -7,8 +7,12 @@ export default function PreviewModal({ open, file, onClose, onDownload }) {
 
   useEffect(() => {
     const ext = file?.name?.split('.').pop()?.toLowerCase()
-    if (ext === 'pdf') { setLoading(false); return }
+    if (['pdf', 'mp3', 'wav', 'ogg', 'flac', 'aac'].includes(ext)) { setLoading(false); return }
     setLoading(true)
+
+    // Timeout fallback: hide loading after 8s regardless
+    const timer = setTimeout(() => setLoading(false), 8000)
+    return () => clearTimeout(timer)
   }, [open, file?.url, file?.name])
 
   useEffect(() => {
@@ -16,9 +20,14 @@ export default function PreviewModal({ open, file, onClose, onDownload }) {
     const el = modelRef.current
     if (!el) return
     const onLoad = () => setLoading(false)
+    const onError = () => setLoading(false)
     el.addEventListener('load', onLoad)
-    return () => el.removeEventListener('load', onLoad)
-  }, [open])
+    el.addEventListener('error', onError)
+    return () => {
+      el.removeEventListener('load', onLoad)
+      el.removeEventListener('error', onError)
+    }
+  }, [open, file?.url])
 
   if (!open || !file) return null
 
