@@ -48,20 +48,20 @@ func serveFile(c *gin.Context, baseDir, relPath string) {
 	c.Header("Content-Type", ct)
 
 	rangeHeader := c.GetHeader("Range")
-	if rangeHeader == "" {
+	if rangeHeader == "" || !strings.HasPrefix(rangeHeader, "bytes=") {
 		c.Header("Content-Length", strconv.FormatInt(fileSize, 10))
-		fileData, _ := os.ReadFile(cleanPath)
-		c.Data(http.StatusOK, ct, fileData)
+		data, _ := os.ReadFile(cleanPath)
+		c.Data(http.StatusOK, ct, data)
 		return
 	}
 
 	var start, end int64
-	n, _ := fmt.Sscanf(rangeHeader, "bytes=%d-%d", &start, &end)
-	if n < 1 {
+	parsed, _ := fmt.Sscanf(rangeHeader, "bytes=%d-%d", &start, &end)
+	if parsed < 1 || start < 0 {
 		c.Status(http.StatusRequestedRangeNotSatisfiable)
 		return
 	}
-	if end == 0 || end >= fileSize {
+	if end <= 0 || end >= fileSize {
 		end = fileSize - 1
 	}
 	if start > end || start >= fileSize {
@@ -74,6 +74,7 @@ func serveFile(c *gin.Context, baseDir, relPath string) {
 	buf := make([]byte, chunkSize)
 	file.Read(buf)
 
+	c.Header("Accept-Ranges", "bytes")
 	c.Header("Content-Range", fmt.Sprintf("bytes %d-%d/%d", start, end, fileSize))
 	c.Header("Content-Length", strconv.FormatInt(chunkSize, 10))
 	c.Data(http.StatusPartialContent, ct, buf)
