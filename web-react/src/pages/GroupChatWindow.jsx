@@ -346,7 +346,7 @@ export default function GroupChatWindow() {
               <img src={msg.content} alt="" className="max-w-[200px] rounded-lg cursor-pointer" onClick={() => setPreviewImage(msg.content)} />
             ) : msg.type === 4 ? (
               <div className="relative">
-                <video src={msg.content} className="max-w-[200px] rounded-lg" preload="metadata" controls />
+                <video src={msg.content} className="max-w-[200px] rounded-lg" preload="metadata" controls playsInline webkit-playsinline="true" />
               </div>
             ) : msg.type === 5 ? (
               <div className="flex items-center gap-3 min-w-[180px]">
