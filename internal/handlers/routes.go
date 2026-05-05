@@ -47,7 +47,7 @@ func serveFile(c *gin.Context, baseDir, relPath string) {
 	c.Header("Accept-Ranges", "bytes")
 	c.Header("Content-Type", ct)
 
-	rangeHeader := c.GetHeader("Range")
+	rangeHeader := c.Request.Header.Get("Range")
 	if rangeHeader == "" || !strings.HasPrefix(rangeHeader, "bytes=") {
 		c.Header("Content-Length", strconv.FormatInt(fileSize, 10))
 		data, _ := os.ReadFile(cleanPath)
