@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"fmt"
 	"mime"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -15,23 +17,66 @@ import (
 
 func serveFile(c *gin.Context, baseDir, relPath string) {
 	cleanPath := filepath.Clean(baseDir + relPath)
-	if !strings.HasPrefix(cleanPath, filepath.Clean(baseDir)+string(os.PathSeparator)) &&
-		cleanPath != filepath.Clean(baseDir) {
+	baseClean := filepath.Clean(baseDir)
+	if !strings.HasPrefix(cleanPath, baseClean+string(os.PathSeparator)) && cleanPath != baseClean {
 		c.Status(http.StatusForbidden)
 		return
 	}
-	data, err := os.ReadFile(cleanPath)
+
+	file, err := os.Open(cleanPath)
 	if err != nil {
 		c.Status(http.StatusNotFound)
 		return
 	}
+	defer file.Close()
+
+	stat, err := file.Stat()
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
 	ct := "application/octet-stream"
 	if ext := filepath.Ext(cleanPath); ext == ".glb" || ext == ".gltf" {
 		ct = "model/gltf-binary"
 	} else if t := mime.TypeByExtension(ext); t != "" {
 		ct = t
 	}
-	c.Data(http.StatusOK, ct, data)
+
+	fileSize := stat.Size()
+	c.Header("Accept-Ranges", "bytes")
+	c.Header("Content-Type", ct)
+
+	rangeHeader := c.GetHeader("Range")
+	if rangeHeader == "" {
+		c.Header("Content-Length", strconv.FormatInt(fileSize, 10))
+		fileData, _ := os.ReadFile(cleanPath)
+		c.Data(http.StatusOK, ct, fileData)
+		return
+	}
+
+	var start, end int64
+	n, _ := fmt.Sscanf(rangeHeader, "bytes=%d-%d", &start, &end)
+	if n < 1 {
+		c.Status(http.StatusRequestedRangeNotSatisfiable)
+		return
+	}
+	if end == 0 || end >= fileSize {
+		end = fileSize - 1
+	}
+	if start > end || start >= fileSize {
+		c.Status(http.StatusRequestedRangeNotSatisfiable)
+		return
+	}
+
+	chunkSize := end - start + 1
+	file.Seek(start, 0)
+	buf := make([]byte, chunkSize)
+	file.Read(buf)
+
+	c.Header("Content-Range", fmt.Sprintf("bytes %d-%d/%d", start, end, fileSize))
+	c.Header("Content-Length", strconv.FormatInt(chunkSize, 10))
+	c.Data(http.StatusPartialContent, ct, buf)
 }
 
 func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *services.RedisService, hub *services.WSHub, jwtSecret, adminUser, adminPass string) {
