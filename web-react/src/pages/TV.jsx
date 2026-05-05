@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Play, Tv, Monitor, Film, Youtube, Newspaper, Music, Globe, AlertCircle, RefreshCw } from 'lucide-react'
+import { ArrowLeft, Play, Tv, Monitor, Film, Youtube, Newspaper, Music, Globe, AlertCircle, RefreshCw, Maximize, Minimize } from 'lucide-react'
 
 const CATEGORIES = [
   { id: 'tv', label: '电视台', icon: Tv, color: 'text-blue-500', bg: 'bg-blue-50' },
@@ -25,6 +25,32 @@ export default function TV() {
   )
   const videoRef = useRef(null)
   const hlsRef = useRef(null)
+  const containerRef = useRef(null)
+  const [fullscreen, setFullscreen] = useState(false)
+
+  const toggleFullscreen = () => {
+    const el = containerRef.current
+    if (!el) return
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+      const req = el.requestFullscreen?.() || el.webkitRequestFullscreen?.()
+      if (req) req.catch(() => {})
+      setFullscreen(true)
+    } else {
+      const exit = document.exitFullscreen?.() || document.webkitExitFullscreen?.()
+      if (exit) exit.catch(() => {})
+      setFullscreen(false)
+    }
+  }
+
+  useEffect(() => {
+    const onFsChange = () => setFullscreen(!!(document.fullscreenElement || document.webkitFullscreenElement))
+    document.addEventListener('fullscreenchange', onFsChange)
+    document.addEventListener('webkitfullscreenchange', onFsChange)
+    return () => {
+      document.removeEventListener('fullscreenchange', onFsChange)
+      document.removeEventListener('webkitfullscreenchange', onFsChange)
+    }
+  }, [])
 
   useEffect(() => {
     fetch('/api/hls/channels')
@@ -102,9 +128,14 @@ export default function TV() {
       </header>
 
       {playing ? (
-        <div className="flex-1 relative bg-black flex flex-col items-center justify-center">
+        <div ref={containerRef} className="flex-1 relative bg-black flex flex-col items-center justify-center">
           <video ref={videoRef} controls autoPlay className="w-full h-full object-contain" playsInline />
-          <button onClick={() => setPlaying(null)} className="absolute top-2 right-2 bg-black/60 text-white px-3 py-1 rounded text-sm z-10">退出</button>
+          <div className="absolute top-2 right-2 flex gap-2 z-10">
+            <button onClick={toggleFullscreen} className="bg-black/60 text-white p-1.5 rounded hover:bg-black/80 transition">
+              {fullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
+            </button>
+            <button onClick={() => setPlaying(null)} className="bg-black/60 text-white px-3 py-1 rounded text-sm hover:bg-black/80 transition">退出</button>
+          </div>
           {error && (
             <div className="absolute bottom-16 left-4 right-4 bg-red-900/80 text-white text-sm p-3 rounded-lg flex items-center gap-2">
               <AlertCircle size={16} className="flex-shrink-0" />

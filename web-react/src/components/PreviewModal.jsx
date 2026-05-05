@@ -3,8 +3,24 @@ import { X, Download, FileType, Music } from 'lucide-react'
 
 export default function PreviewModal({ open, file, onClose, onDownload }) {
   const [loading, setLoading] = useState(true)
-  const iframeRef = useRef(null)
   const modelRef = useRef(null)
+
+  useEffect(() => {
+    const ext = file?.name?.split('.').pop()?.toLowerCase()
+    if (ext === 'pdf') { setLoading(false); return }
+    setLoading(true)
+  }, [open, file?.url, file?.name])
+
+  useEffect(() => {
+    if (!open) return
+    const el = modelRef.current
+    if (!el) return
+    const onLoad = () => setLoading(false)
+    el.addEventListener('load', onLoad)
+    return () => el.removeEventListener('load', onLoad)
+  }, [open])
+
+  if (!open || !file) return null
 
   const ext = file?.name?.split('.').pop()?.toLowerCase()
   const isImage = ['jpg','jpeg','png','gif','webp','bmp','svg'].includes(ext)
@@ -12,20 +28,6 @@ export default function PreviewModal({ open, file, onClose, onDownload }) {
   const isAudio = ['mp3','wav','ogg','flac','aac'].includes(ext)
   const is3D = ['glb','gltf'].includes(ext)
   const isPDF = ext === 'pdf'
-
-  useEffect(() => {
-    setLoading(true)
-  }, [open, file?.url])
-
-  useEffect(() => {
-    if (!is3D || !modelRef.current || !open) return
-    const el = modelRef.current
-    const onLoad = () => setLoading(false)
-    el.addEventListener('load', onLoad)
-    return () => el.removeEventListener('load', onLoad)
-  }, [is3D, open])
-
-  if (!open || !file) return null
 
   const renderContent = () => {
     if (isImage) {
@@ -54,8 +56,7 @@ export default function PreviewModal({ open, file, onClose, onDownload }) {
     }
     if (isPDF) {
       return (
-        <iframe ref={iframeRef} src={file.url} onLoad={() => setLoading(false)}
-          className="w-full h-full rounded-lg" title={file.name} />
+        <iframe src={file.url} className="w-full h-full rounded-lg" title={file.name} />
       )
     }
     return (
@@ -88,7 +89,7 @@ export default function PreviewModal({ open, file, onClose, onDownload }) {
         </div>
       </header>
       <div className="flex-1 flex items-center justify-center bg-black p-4 relative" onClick={e => e.stopPropagation()}>
-        {loading && (
+        {!isPDF && loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-black z-10">
             <div className="flex flex-col items-center gap-3">
               <div className="w-8 h-8 border-2 border-wechat-green border-t-transparent rounded-full animate-spin" />
