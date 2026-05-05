@@ -1,12 +1,10 @@
 package handlers
 
 import (
-	"fmt"
 	"mime"
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -215,17 +213,13 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *services.RedisService, hub *
 			c.File("./web-react/dist/index.html")
 		})
 		r.Static("/assets", "./web-react/dist/assets")
- 			r.Static("/cloud-files", "./uploads/cloud")
-		r.GET("/uploads/*filepath", func(c *gin.Context) {
-			serveFile(c, uploadH.UploadDir, c.Param("filepath"))
-		})
+		r.Static("/uploads", uploadH.UploadDir)
+		r.Static("/cloud-files", "./uploads/cloud")
 		r.Static("/library-files", "./uploads/library")
 	} else {
 		r.StaticFile("/", "./web/index.html")
 		r.StaticFile("/css/style.css", "./web/css/style.css")
 		r.StaticFile("/js/app.js", "./web/js/app.js")
-		r.GET("/uploads/*filepath", func(c *gin.Context) {
-			serveFile(c, uploadH.UploadDir, c.Param("filepath"))
-		})
+		r.Static("/uploads", uploadH.UploadDir)
 	}
 }
