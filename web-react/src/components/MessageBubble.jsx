@@ -27,8 +27,9 @@ export default function MessageBubble({ msg, isMine, user, friend, onContextMenu
             <FileMessage msg={msg} />
           ) : msg.type === 6 ? (
             <div className="relative cursor-pointer" onClick={() => onImageClick(msg.content)}>
-              <model-viewer src={msg.content} camera-controls auto-rotate rotation-per-second="120"
-                style={{ width: '200px', height: '200px', background: '#1a1a2e' }} className="rounded-lg"></model-viewer>
+              <model-viewer src={msg.content} camera-controls auto-rotate rotation-per-second="30"
+                shadow-intensity="1" environment-image="neutral" exposure="1" loading="eager"
+                style={{ width: '200px', height: '200px', background: '#1a1a2e', borderRadius: '8px' }}></model-viewer>
               <a href={msg.content} download={msg.file_name}
                 className="absolute top-2 right-2 p-1.5 bg-black/60 text-white rounded-full hover:bg-black/80 transition"
                 title="下载" onClick={e => e.stopPropagation()}>

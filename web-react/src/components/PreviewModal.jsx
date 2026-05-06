@@ -10,8 +10,8 @@ export default function PreviewModal({ open, file, onClose, onDownload }) {
     if (['pdf', 'mp3', 'wav', 'ogg', 'flac', 'aac'].includes(ext)) { setLoading(false); return }
     setLoading(true)
 
-    // Timeout fallback: hide loading after 8s regardless
-    const timer = setTimeout(() => setLoading(false), 8000)
+    // Fallback: hide loading after 5s regardless
+    const timer = setTimeout(() => setLoading(false), 5000)
     return () => clearTimeout(timer)
   }, [open, file?.url, file?.name])
 
@@ -19,13 +19,14 @@ export default function PreviewModal({ open, file, onClose, onDownload }) {
     if (!open) return
     const el = modelRef.current
     if (!el) return
-    const onLoad = () => setLoading(false)
-    const onError = () => setLoading(false)
-    el.addEventListener('load', onLoad)
-    el.addEventListener('error', onError)
+    const done = () => setLoading(false)
+    el.addEventListener('load', done)
+    el.addEventListener('error', done)
+    // Model may have already loaded from cache before listener attached
+    if (el.loaded) done()
     return () => {
-      el.removeEventListener('load', onLoad)
-      el.removeEventListener('error', onError)
+      el.removeEventListener('load', done)
+      el.removeEventListener('error', done)
     }
   }, [open, file?.url])
 
@@ -58,9 +59,19 @@ export default function PreviewModal({ open, file, onClose, onDownload }) {
     }
     if (is3D) {
       return (
-        <model-viewer ref={modelRef} src={file.url} camera-controls auto-rotate rotation-per-second="60"
-          interaction-prompt="none" style={{ width: '100%', height: '100%' }}
-          className="w-full h-full" />
+        <model-viewer
+          ref={modelRef}
+          src={file.url}
+          camera-controls
+          auto-rotate
+          rotation-per-second="30"
+          interaction-prompt="none"
+          shadow-intensity="1"
+          environment-image="neutral"
+          exposure="1"
+          loading="eager"
+          style={{ width: '100%', height: '100%', background: 'transparent' }}
+        />
       )
     }
     if (isPDF) {
